@@ -3,9 +3,11 @@ from xml.etree import ElementTree
 from xml.dom import minidom
 import argparse
 import os
+from os import listdir
+from os.path import isfile, join
 import random
-
-# TODO: Specify which parameters should be changed
+import xmlschema
+from pprint import pprint
 
 town_list = [
     "Town01",
@@ -20,54 +22,95 @@ town_list = [
     "Town10"
 ]
 
-wheater_list=[
-    "tbd."
-]
 
-car_models = [
-    "vehicle.lincoln.mkz2017",
-    "tbd."
-]
+class ScenarioGenerator:
 
-def prettify(elem):
-    rough_string = ElementTree.tostring(elem.getroot(), 'utf-8')
-    reparsed = minidom.parseString(rough_string)
-    return reparsed.toprettyxml(indent="  ")
+    def __init__(self, save_dir:str, schema_file_path:str, path_to_basic_scenarios:str, number_scnearios:int):
+        self.save_dir = save_dir
+        self.number_scnearios = number_scnearios
+        self.schema_file_path = schema_file_path
+        self.path_to_basic_scenarios = path_to_basic_scenarios
 
-def generate_xml_scenario(number_scnearios:int) -> ET.ElementTree:
-    root = ET.Element("scenarios")
+    def run(self):
+        # read schema file
+        self.xmlSchema = self.readOpenScenarioSchema()
+        self.inspect_schema()
 
-    for i in range(number_scnearios):
-         # TODO: randomize or vary parameters for every loop step
-        scenario = ET.SubElement(root, "scenario", name=f"scnearioName_{i}",type="todo",town=random.choice(town_list))
-        # TODO: in which ranges are coordinates lying ? 
-        ET.SubElement(scenario, "ego_vehicle", x="1",y="2",z="3",yaw="4", model="vehicle.lincoln.mkz2017")
-        ET.SubElement(scenario, "other_actor", x="2",y="3",z="4",yaw="5",model="vehicle.tesla.model3")
-        ET.SubElement(scenario,"target", x="899999", y="2323023", z="1.0")
+        #  read basic scenario file
+        # get all files in basic_scenario folder
+        scenarioFilenames = [f for f in listdir(self.path_to_basic_scenarios) if isfile(join(self.path_to_basic_scenarios, f))]
 
-        #TODO: which elements does exist in general ?
-        #  <other_actor random_location="True" autopilot="True" model="vehicle.*" amount="50" /> --> differs i.e. from obove
+        # validate all files
+        scenarioFiles = []
+        for openScenrioFilename in scenarioFilenames:
+            # read basic scenario
+            xt = ElementTree.parse(self.path_to_basic_scenarios + openScenrioFilename)
+            assert self.xmlSchema.is_valid(xt)
+            scenarioFiles.append(xt)
 
-        tree = ET.ElementTree(root)
+        # for first tests, just pick a scenario
+        basic_scenario = scenarioFiles[1]
 
-    return tree
+        #tree = self.generateXmlScenariosFromBasic(basic_scenario)
 
-parser = argparse.ArgumentParser(description="")
-parser.add_argument('--number_scnearios', required=False, default=5,help="Number of Scenarios that should be created")
-parser.add_argument('--file_name', required=True,help="Name of XML scneario file")
-parser.add_argument('--save_path',required=False, default="./generated_scenarios/",help="Path for saving XML scneario file")
-args = parser.parse_args()
+        #TODO call: self.save_files()
 
-save_dir = args.save_path
-number_scnearios = args.number_scnearios
-file_name = args.file_name
 
-if not os.path.exists(save_dir):
-    os.makedirs(save_dir)
+    def inspect_schema(self) -> None:
+        for i in self.xmlSchema.iter_components():
+            print(i)
 
-tree = generate_xml_scenario(number_scnearios)
 
-tree = prettify(tree)
+    def save_files(self) -> None:
+        if not os.path.exists(self.save_dir):
+            os.makedirs(self.save_dir)
+        # TODO method for saving all generated scenario files
+        # by calling self.savefile for file in self.generated_files with random file name based on basic scnerio name
 
-with open(os.path.join(save_dir,f"{file_name}.xml"),"w") as f:
-    f.write(tree)
+    def saveFile(self,data:str, file_name:str) -> None:
+            with open(os.path.join(self.save_dir,f"{file_name}.xosc"),"w") as f:
+                f.write(tree)
+
+    def readOpenScenarioSchema(self) -> xmlschema.validators.schema.XMLSchema10:
+        return xmlschema.XMLSchema(self.schema_file_path)
+
+    def prettify(self,elem:ET.ElementTree):
+        rough_string = ElementTree.tostring(elem.getroot(), 'utf-8')
+        reparsed = minidom.parseString(rough_string)
+        return reparsed.toprettyxml(indent="  ")
+
+    def generateXmlScenariosFromBasic(self, basic_scenario: ET.ElementTree) -> list:
+
+        pprint(self.xmlSchema.to_dict(basic_scenario))
+
+        generated_scenarios = []
+
+        for i in range(self.number_scnearios):
+            generated_scenarios.append("bla")
+
+        return generated_scenarios
+
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description="")
+    parser.add_argument('--number_scnearios', required=False, default=5,help="Number of Scenarios that should be created")
+    parser.add_argument('--save_path',required=False, default="./generated_scenarios/",help="Path for saving XML scneario file")
+    args = parser.parse_args()
+
+    save_dir = args.save_path
+    number_scnearios = args.number_scnearios
+
+    XML_SCHEMA_FILE_PATH = "OpenSCENARIO.xsd"
+    PATH_TO_BASIC_SCENARIOS = "./basic_scenarios/"
+
+    #init
+    generator = ScenarioGenerator(
+        save_dir=save_dir,
+        number_scnearios=number_scnearios,
+        schema_file_path=XML_SCHEMA_FILE_PATH,
+        path_to_basic_scenarios=PATH_TO_BASIC_SCENARIOS
+        )
+
+    # run generator
+    generator.run()
