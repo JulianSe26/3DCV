@@ -1,21 +1,22 @@
 import carla
 import random
 
-client = carla.Client("localhost", 2000)
+#client = carla.Client("localhost", 2000)
 
-client.load_world("Town01")
+#client.load_world("Town07")
 
 class ConfigManipulator:
     def __init__(self, world_name: str = "Town01", host: str = "localhost", port: int = 2000):
         self.client = carla.Client(host, port)
         self.client.load_world(world_name)
+        self.world = self.client.get_world()
 
 
     def get_pos_in_distance(self, x:int, y:int, z:int, distance:float) -> carla.Waypoint:
         """Get a new `carla.Waypoint` at a set distance from the current location. 
         Returned waypoints are guaranteed to be on the same road and lane.
         """
-        m = client.get_world().get_map()
+        m = self.world.get_map()
 
         s = m.get_waypoint(carla.Location(x=x, y=y, z=z)).previous(distance)
 
@@ -27,13 +28,13 @@ class ConfigManipulator:
         `vehicle` for cars only, `static` for props, `walker` for people
         Default is `*`
         """
-        return random.choice([bp.id for bp in client.get_world().get_blueprint_library().filter(filter)])
+        return random.choice([bp.id for bp in self.client.get_world().get_blueprint_library().filter(filter)])
 
-    def get_random_car_actor(self) -> str:
-        """Wrapper around `get_random_actor` that returns the string for an available vehicle
+    def get_random_vehicle_actor(self, wheels:int=4) -> str:
+        """Returns string for a vehicle with `wheels`
         """
-        return self.get_random_actor('vehicle')
+        return random.choice([a.id for a in self.world.get_blueprint_library().filter('vehicle') if a.get_attribute('number_of_wheels').as_int() == wheels])
 
-m = ConfigManipulator()
+m = ConfigManipulator(world_name = "Town01")
 
-print(m.get_random_car_actor())
+print(m.get_random_actor('vehicle'))
