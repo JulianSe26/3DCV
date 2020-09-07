@@ -60,9 +60,9 @@ ROUTE_STRATGEY_KEY = "RouteStrategy"
 
 class ScenarioGenerator:
 
-    def __init__(self, save_dir:str, schema_file_path:str, path_to_basic_scenarios:str, number_scnearios:int):
+    def __init__(self, save_dir:str, schema_file_path:str, path_to_basic_scenarios:str, number_scenarios:int):
         self.save_dir = save_dir
-        self.number_scnearios = number_scnearios
+        self.number_scenarios = number_scenarios
         self.schema_file_path = schema_file_path
         self.path_to_basic_scenarios = path_to_basic_scenarios
 
@@ -111,7 +111,7 @@ class ScenarioGenerator:
 
 
     def process_basis_scenario(self):
-        # process basis scnearios for identifying values set
+        # process basis scenarios for identifying values set
         pass
 
 
@@ -139,7 +139,7 @@ class ScenarioGenerator:
 
         generated_scenarios = []
 
-        for i in range(self.number_scnearios):
+        for i in range(self.number_scenarios):
             generated_scenarios.append("bla")
 
         return generated_scenarios
@@ -148,12 +148,12 @@ class ScenarioGenerator:
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="")
-    parser.add_argument('--number_scnearios', required=False, default=5,help="Number of Scenarios that should be created")
-    parser.add_argument('--save_path',required=False, default="./generated_scenarios/",help="Path for saving XML scneario file")
+    parser.add_argument('--number_scenarios', required=False, default=5,help="Number of Scenarios that should be created")
+    parser.add_argument('--save_path',required=False, default="./generated_scenarios/",help="Path for saving XML scenario file")
     args = parser.parse_args()
 
     save_dir = args.save_path
-    number_scnearios = args.number_scnearios
+    number_scenarios = args.number_scenarios
 
     XML_SCHEMA_FILE_PATH = "OpenSCENARIO.xsd"
     PATH_TO_BASIC_SCENARIOS = "./basic_scenarios/"
@@ -161,7 +161,7 @@ if __name__ == "__main__":
     #init
     generator = ScenarioGenerator(
         save_dir=save_dir,
-        number_scnearios=number_scnearios,
+        number_scenarios=number_scenarios,
         schema_file_path=XML_SCHEMA_FILE_PATH,
         path_to_basic_scenarios=PATH_TO_BASIC_SCENARIOS
         )
