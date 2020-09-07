@@ -9,32 +9,6 @@ import random
 import xmlschema
 from pprint import pprint
 
-
-# ==== Attributes need to be fetched via Carla Python API ====
-
-town_list = [
-    "Town01",
-    "Town02",
-    "Town03",
-    "Town04",
-    "Town05",
-    "Town06",
-    "Town07",
-    "Town08",
-    "Town09",
-    "Town10"
-]
-
-car_list = [
-    "tbd."
-]
-
-spawn_points = [
-    "tbd."
-]
-
-#===============
-
 # group
 ENTITY_KEY = "EntityObject"
 
@@ -43,7 +17,6 @@ SUN_KEY = "Sun"
 FOG_KEY = "Fog" # visual range double 
 DYNAMIC_CONSTRAINTS_KEY = "DynamicConstraints"
 PRECIP_KEY = "Precipitation"
-
 
 # restrictions
 CLOUD_STATE_KEY = "CloudState"
@@ -55,8 +28,6 @@ VEHICLE_CAT_KEY = "VehicleCategory"
 RULE_KEY = "Rule"
 PED_CAT_KEY = "PedestrianCategory"
 ROUTE_STRATGEY_KEY = "RouteStrategy"
-
-
 
 class ScenarioGenerator:
 
@@ -85,14 +56,16 @@ class ScenarioGenerator:
 
         # for first tests, just pick a scenario
         basic_scenario = scenarioFiles[1]
+        print(type(basic_scenario))
 
-        #tree = self.generateXmlScenariosFromBasic(basic_scenario)
+        tree = self.generateXmlScenariosFromBasic(basic_scenario)
 
         #TODO call: self.save_files()
 
 
     def inspect_schema(self) -> None:
 
+        # TODO: Replace w/ loop
         # all restrictions for possible values
         self.cloudStates = self.xmlSchema.types[CLOUD_STATE_KEY].member_types[0].enumeration
         self.misc_objects = self.xmlSchema.types[MISC_OBJ_KEY].member_types[0].enumeration
@@ -108,11 +81,6 @@ class ScenarioGenerator:
         print(self.xmlSchema.types[FOG_KEY].attributes.items())
         print(self.xmlSchema.types[PRECIP_KEY].attributes.items())
         print(self.xmlSchema.types[DYNAMIC_CONSTRAINTS_KEY].attributes.items())
-
-
-    def process_basis_scenario(self):
-        # process basis scenarios for identifying values set
-        pass
 
 
     def save_files(self) -> None:
