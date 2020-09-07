@@ -9,6 +9,9 @@ import random
 import xmlschema
 from pprint import pprint
 
+
+# ==== Attributes need to be fetched via Carla Python API ====
+
 town_list = [
     "Town01",
     "Town02",
@@ -21,6 +24,38 @@ town_list = [
     "Town09",
     "Town10"
 ]
+
+car_list = [
+    "tbd."
+]
+
+spawn_points = [
+    "tbd."
+]
+
+#===============
+
+# group
+ENTITY_KEY = "EntityObject"
+
+# complex types
+SUN_KEY = "Sun"
+FOG_KEY = "Fog" # visual range double 
+DYNAMIC_CONSTRAINTS_KEY = "DynamicConstraints"
+PRECIP_KEY = "Precipitation"
+
+
+# restrictions
+CLOUD_STATE_KEY = "CloudState"
+ROUTE_STRATEGY_KEY = "RouteStrategy"
+MISC_OBJ_KEY = "MiscObjectCategory"
+OBJ_TYPE_KEY = "ObjectType"
+PRECIP_TYPE_KEY = "PrecipitationType"
+VEHICLE_CAT_KEY = "VehicleCategory"
+RULE_KEY = "Rule"
+PED_CAT_KEY = "PedestrianCategory"
+ROUTE_STRATGEY_KEY = "RouteStrategy"
+
 
 
 class ScenarioGenerator:
@@ -36,7 +71,7 @@ class ScenarioGenerator:
         self.xmlSchema = self.readOpenScenarioSchema()
         self.inspect_schema()
 
-        #  read basic scenario file
+        # read basic scenario file
         # get all files in basic_scenario folder
         scenarioFilenames = [f for f in listdir(self.path_to_basic_scenarios) if isfile(join(self.path_to_basic_scenarios, f))]
 
@@ -57,8 +92,27 @@ class ScenarioGenerator:
 
 
     def inspect_schema(self) -> None:
-        for i in self.xmlSchema.iter_components():
-            print(i)
+
+        # all restrictions for possible values
+        self.cloudStates = self.xmlSchema.types[CLOUD_STATE_KEY].member_types[0].enumeration
+        self.misc_objects = self.xmlSchema.types[MISC_OBJ_KEY].member_types[0].enumeration
+        self.object_types = self.xmlSchema.types[OBJ_TYPE_KEY].member_types[0].enumeration
+        self.preceip_types = self.xmlSchema.types[PRECIP_TYPE_KEY].member_types[0].enumeration
+        self.vehicle_categories = self.xmlSchema.types[VEHICLE_CAT_KEY].member_types[0].enumeration
+        self.rules = self.xmlSchema.types[RULE_KEY].member_types[0].enumeration
+        self.pedestrian_categories = self.xmlSchema.types[PED_CAT_KEY].member_types[0].enumeration
+        self.route_strategies = self.xmlSchema.types[ROUTE_STRATGEY_KEY].member_types[0].enumeration
+
+        # all complex types
+        print((self.xmlSchema.types[SUN_KEY].attributes.items()))
+        print(self.xmlSchema.types[FOG_KEY].attributes.items())
+        print(self.xmlSchema.types[PRECIP_KEY].attributes.items())
+        print(self.xmlSchema.types[DYNAMIC_CONSTRAINTS_KEY].attributes.items())
+
+
+    def process_basis_scenario(self):
+        # process basis scnearios for identifying values set
+        pass
 
 
     def save_files(self) -> None:
