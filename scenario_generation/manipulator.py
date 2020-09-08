@@ -31,9 +31,23 @@ class ConfigManipulator:
         return random.choice([bp.id for bp in self.client.get_world().get_blueprint_library().filter(filter)])
 
     def get_random_vehicle_actor(self, wheels:int=4) -> str:
-        """Returns string for a vehicle with `wheels`
+        """Returns string for a vehicle with `wheels` many wheels
         """
         return random.choice([a.id for a in self.world.get_blueprint_library().filter('vehicle') if a.get_attribute('number_of_wheels').as_int() == wheels])
+
+    def get_random_in_range(low:int=0, high=10):
+        """Get random number where low <= num <= high
+        `high` determines the return type. If it is a `float` return a float. If it is `int` return an int.
+        """
+        if type(high) == 'int':
+            return random.randint(low, high)
+        elif type(high) == 'float':
+            return random.uniform(low, high)
+
+    def get_random_from_list(data:list, num:int=1):
+        """Get `num` entries from a list
+        """
+        return random.choices(data, k=num)
 
 m = ConfigManipulator(world_name = "Town01")
 
