@@ -9,6 +9,7 @@ import random
 import xmlschema
 import datetime
 import pytz
+from collections import defaultdict
 from manipulator import ConfigManipulator
 
 # group
@@ -59,6 +60,7 @@ class ScenarioGenerator:
         self.path_to_basic_scenarios = path_to_basic_scenarios
 
         self.carla_info = {}
+        self.values = _nested_dict()
 
     def run(self) -> None:
 
@@ -70,7 +72,7 @@ class ScenarioGenerator:
         scenarioFilenames = [f for f in listdir(self.path_to_basic_scenarios) if isfile(join(self.path_to_basic_scenarios, f))]
 
         scenarioFiles = []
-        for openScenrioFilename in scenarioFilenames:
+        for openScenrioFilename in scenarioFilenames[:1]:
             # read basic scenario and generate new Scenarios
             self.generateXmlScenariosFromBasic(openScenrioFilename)
 
@@ -81,11 +83,16 @@ class ScenarioGenerator:
         manipulator = ConfigManipulator(world_name=scenario_town)
 
         #The keys here match the keys in `changeable_attributes`
-        self.carla_info['Vehicle'] = manipulator.get_vehicle_actors()
-        self.carla_info['Pedestrian'] = manipulator.get_actors('walker.')
+        #The mapping has to be done by hand though
+        self.values['Vehicle']['name'] = manipulator.get_vehicle_actors()
+        self.values['Pedestrian']['name'] = manipulator.get_actors('walker.')
+
+        print(self.values)
 
     def inspect_schema(self) -> None:
 
+        print([val for val in self.xmlSchema.types['Weather'].iter_components()])
+        #print(self.xmlSchema.types['Weather'].children)
         # all restrictions for possible values
         self.restriction_values = {}
         for value in schema_restriction_values:
@@ -95,6 +102,12 @@ class ScenarioGenerator:
         self.complex_types = {}
         for value in schema_complex_types_values:
             self.complex_types.update({value: self.xmlSchema.types[value].attributes.keys()})
+
+        # For now just get the keys that the changeable attribute itself has
+        for value in changeable_attributes:
+            for a in self.xmlSchema.types[value].iter_components():
+                if type(a) == xmlschema.XsdAttribute:
+                    self.values[value][a.name]
 
     def saveFile(self,data:str, file_name:str) -> None:
             if not os.path.exists(self.save_dir):
@@ -189,6 +202,8 @@ class ScenarioGenerator:
                 self.generated_scenarios.append(prettyfied_scenario)
                 self.saveFile(prettyfied_scenario, f"{os.path.splitext(openScenrioFilename)[0]}_{i}")
 
+def _nested_dict():
+    return defaultdict(_nested_dict)
 
 if __name__ == "__main__":
 
