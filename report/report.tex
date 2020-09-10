@@ -114,6 +114,22 @@ To train and manage the trainings of imitation learning networks jointly with ev
 
 \subsection{Adjustable parameters}
 
+CARLA and the ScenarioRunner enable us to adjust quite a few parameters, so that the generator can create a lot of diverse settings.
+This includes the type and model of the car, which is steered by the learned agent, but more importantly of each and every other car.
+This is important so that the model generalizes well, even if different cars are in it's field of vision.
+Furthermore, to strain this point, we can also change the color of all cars, resulting in different RGB patterns perceived by the cars sensors.
+
+Another parameter, that can be changed is the speed of the cars, which also has an impact on the behavior in critical situations.
+The weather plays an important role, as it drastically changes what is perceived by sensors and also alters the effects of a certain behavior. For example rain does not only impair the video of the camera, but additionally lengthens the breaking distance.
+These variables can all be adjusted rather easily, by just randomly picking a value from a predefined set.
+
+The part of the configuration, which is more difficult to vary is with regards to further actors, such as pedestrians and other vehicles.
+These have to be spawned somewhere and a behavior needs to be defined.
+CARLA provides a list of possible spawn points across a map, but if we just choose these randomly, we cannot be sure, that the spawned car has an impact on our scenario.
+Furthermore, the behavior of the cars is rather non-trivial.
+Most importantly, the behavior of the car, which characterizes the critical scenario needs to well defined.
+But apart from that, we also want vehicles in the background, that drive around somewhat automated.
+
 \printbibliography
 
 \end{document}
