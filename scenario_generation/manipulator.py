@@ -49,6 +49,10 @@ class ConfigManipulator:
         """
         return random.choices(data, k=num)
 
-m = ConfigManipulator(world_name = "Town01")
 
-print(m.get_random_actor('vehicle'))
+if __name__ == "__main__":
+    
+    #m = ConfigManipulator(world_name = "Town01")
+
+    #print(m.get_random_actor('vehicle'))
+    pass
