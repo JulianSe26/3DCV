@@ -1,9 +1,6 @@
 import carla
 import random
-
-#client = carla.Client("localhost", 2000)
-
-#client.load_world("Town07")
+from typing import List
 
 class ConfigManipulator:
     def __init__(self, world_name: str = "Town01", host: str = "localhost", port: int = 2000):
@@ -23,17 +20,25 @@ class ConfigManipulator:
         if len(s) > 0:
             return s[0]
 
+    def get_vehicle_actors(self, wheels:int=4) -> List[str]:
+        """This is a little janky but filtering by the number of wheels seems to be the easiest method to filter out cars/bikes from pedestrians"""
+        return [a.id for a in self.world.get_blueprint_library().filter('vehicle') if a.get_attribute('number_of_wheels').as_int() == wheels]
+
+    def get_actors(self, filter:str='*') -> List[str]:
+        """Return all possible actors in the world or filter by regex"""
+        return [bp.id for bp in self.client.get_world().get_blueprint_library().filter(filter)]
+
     def get_random_actor(self, filter:str='*') -> str:
         """Get the name of a random actor. Filter can be used to only select certain categories.
         `vehicle` for cars only, `static` for props, `walker` for people
         Default is `*`
         """
-        return random.choice([bp.id for bp in self.client.get_world().get_blueprint_library().filter(filter)])
+        return random.choice(self.get_actors(filter=filter))
 
     def get_random_vehicle_actor(self, wheels:int=4) -> str:
         """Returns string for a vehicle with `wheels` many wheels
         """
-        return random.choice([a.id for a in self.world.get_blueprint_library().filter('vehicle') if a.get_attribute('number_of_wheels').as_int() == wheels])
+        return random.choice(self.get_vehicle_actors())
 
     def get_random_in_range(low:int=0, high=10):
         """Get random number where low <= num <= high

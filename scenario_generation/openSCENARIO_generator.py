@@ -9,7 +9,7 @@ import random
 import xmlschema
 import datetime
 import pytz
-#import manipulator as manipulator
+from manipulator import ConfigManipulator
 
 # group
 ENTITY_KEY = "EntityObject"
@@ -36,7 +36,7 @@ schema_restriction_values = [
 ]
 
 # attributes to change
-changable_attributes = [
+changeable_attributes = [
     'Vehicle',
     'Pedestrian',
     'Weather',
@@ -58,6 +58,8 @@ class ScenarioGenerator:
         self.schema_file_path = schema_file_path
         self.path_to_basic_scenarios = path_to_basic_scenarios
 
+        self.carla_info = {}
+
     def run(self) -> None:
 
         # read schema file
@@ -76,8 +78,11 @@ class ScenarioGenerator:
     def fetch_data_from_carla(self, scenario_town: str) -> None:
         # method for fetching data values from carla api
         # TODO enrich categorial values for pedestrian group and vehicle.car types from CARLA server
-        # manipulator.ConfigManipulator(world_name="town1")
-        pass
+        manipulator = ConfigManipulator(world_name=scenario_town)
+
+        #The keys here match the keys in `changeable_attributes`
+        self.carla_info['Vehicle'] = manipulator.get_vehicle_actors()
+        self.carla_info['Pedestrian'] = manipulator.get_actors('walker.')
 
     def inspect_schema(self) -> None:
 
@@ -147,7 +152,7 @@ class ScenarioGenerator:
             root.find('FileHeader').set('author','3DCV-Generator')
             root.find('FileHeader').set('date',date_time)
 
-            for tag in changable_attributes:
+            for tag in changeable_attributes:
                 node = root.findall(f'.//{tag}')
                 
                 if len(node) == 1 and node is not None:
