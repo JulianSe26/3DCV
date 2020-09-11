@@ -1,5 +1,6 @@
 import xml.etree.cElementTree as ET
 from xml.etree import ElementTree
+from xml.etree.ElementTree import fromstring, ElementTree as XET
 from xml.dom import minidom
 import argparse
 import os
@@ -10,6 +11,7 @@ import xmlschema
 import datetime
 import pytz
 from collections import defaultdict
+from hashlib import md5
 from manipulator import ConfigManipulator
 
 # group
@@ -72,13 +74,12 @@ class ScenarioGenerator:
         scenarioFilenames = [f for f in listdir(self.path_to_basic_scenarios) if isfile(join(self.path_to_basic_scenarios, f))]
 
         scenarioFiles = []
-        for openScenrioFilename in scenarioFilenames[:1]:
+        for openScenrioFilename in scenarioFilenames:
             # read basic scenario and generate new Scenarios
             self.generateXmlScenariosFromBasic(openScenrioFilename)
 
 
     def fetch_data_from_carla(self, scenario_town: str) -> None:
-        # method for fetching data values from carla api
         # TODO enrich categorial values for pedestrian group and vehicle.car types from CARLA server
         manipulator = ConfigManipulator(world_name=scenario_town)
 
@@ -88,10 +89,11 @@ class ScenarioGenerator:
         self.values['Pedestrian']['name'] = manipulator.get_actors('walker.')
 
         print(self.values)
+        pass
 
     def inspect_schema(self) -> None:
 
-        print([val for val in self.xmlSchema.types['Weather'].iter_components()])
+        #print([val for val in self.xmlSchema.types['Weather'].iter_components()])
         #print(self.xmlSchema.types['Weather'].children)
         # all restrictions for possible values
         self.restriction_values = {}
@@ -109,6 +111,7 @@ class ScenarioGenerator:
                 if type(a) == xmlschema.XsdAttribute:
                     self.values[value][a.name]
 
+
     def saveFile(self,data:str, file_name:str) -> None:
             if not os.path.exists(self.save_dir):
                 os.makedirs(self.save_dir)
@@ -123,11 +126,12 @@ class ScenarioGenerator:
         reparsed = minidom.parseString(rough_string)
         return reparsed.toprettyxml(indent="  ")
 
-    def _check_duplication(self,new_scenario:str) -> bool:
-        # TODO
-        for generatedFile in self.generated_scenarios:
-            if generatedFile == new_scenario:
-                 print("pseudeo string based comparison duplication detected")
+    def _check_duplication(self,new_scenario:ElementTree) -> bool:
+        xml_hash = new_scenario.__hash__()
+
+        for generatedFileHash in self.generated_scenarios_hashs:
+            if xml_hash == generatedFileHash:
+                 print("Duplication of generated file detected..")
                  return True
 
         return False
@@ -143,18 +147,14 @@ class ScenarioGenerator:
         new_scenario = basic_scenario
         root = new_scenario.getroot()
 
-
-        #Get town and setup ConfigManipulator to fetch values for a map
-        scenario_town = root.find(f'.//{TOWN_TAG}').items()[0][1]
-
         # enrich possible values for pedestrian and car types from carla
         scenario_town = root.find(f'.//{TOWN_TAG}').items()[0][1]
         self.fetch_data_from_carla(scenario_town)
 
         # Change values -> save for the purpose of checking duplications
-        self.generated_scenarios = []
+        self.generated_scenarios_hashs = []
 
-        lowercased_restriction_values  =  {k.lower(): v for k, v in self.restriction_values.items()}
+        lowercased_restriction_values  = {k.lower(): v for k, v in self.restriction_values.items()}
         lowercased_complex_type_values = {k.lower(): v for k, v in self.complex_types.items()}
 
         for i in range(self.number_scenarios):
@@ -178,11 +178,14 @@ class ScenarioGenerator:
                     if node[0].tag.lower() in lowercased_complex_type_values.keys():
                         for item in node[0].items():
                             if item[0].lower() not in lowercased_restriction_values:
-                                # maybe change based on current value ? -> item[1] 
                                 # TODO: what are realtsic ranges for those values ? 
+                                if float(item[1]) != 0.0:
+                                    new_value = float(item[1]) + float(item[1]) *random.uniform(-1,1)
+                                else:
+                                    new_value = float(random.uniform(0,10))
 
                                 #print(f'before {item[0]}, {item[1]}')
-                                node[0].set(item[0], str(float(random.randint(0,1000))))
+                                node[0].set(item[0], str(new_value))
                                 #print(f'after {node[0].items()}')
 
                     # set random value for restricted catagorial types:
@@ -193,13 +196,13 @@ class ScenarioGenerator:
             #validate xosc again with schema
             assert self.xmlSchema.is_valid(new_scenario)
 
-            prettyfied_scenario = self.prettify(new_scenario)
 
             #checking duplication
-            if self._check_duplication(prettyfied_scenario):
+            if self._check_duplication(new_scenario):
                 continue
             else:
-                self.generated_scenarios.append(prettyfied_scenario)
+                prettyfied_scenario = self.prettify(new_scenario)
+                self.generated_scenarios_hashs.append(new_scenario.__hash__())
                 self.saveFile(prettyfied_scenario, f"{os.path.splitext(openScenrioFilename)[0]}_{i}")
 
 def _nested_dict():

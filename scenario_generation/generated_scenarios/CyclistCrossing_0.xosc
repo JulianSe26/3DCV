@@ -2,7 +2,7 @@
 <OpenSCENARIO>
   
   
-  <FileHeader author="3DCV-Generator" date="2020-09-10T17:00:09.413133+02:00" description="CARLA:CyclistCrossing" revMajor="1" revMinor="0"/>
+  <FileHeader author="3DCV-Generator" date="2020-09-11T11:59:07.825403+02:00" description="CARLA:CyclistCrossing" revMajor="1" revMinor="0"/>
   
   
   <ParameterDeclarations/>
@@ -149,19 +149,19 @@
             <Environment name="Environment1">
               
               
-              <TimeOfDay animation="false" dateTime="2020-10-03T16:43:00"/>
+              <TimeOfDay animation="false" dateTime="2020-10-03T10:06:00"/>
               
               
-              <Weather cloudState="overcast">
+              <Weather cloudState="free">
                 
                 
-                <Sun azimuth="999.0" elevation="62.0" intensity="443.0"/>
+                <Sun azimuth="8.999171510694197" elevation="0.7946308115391088" intensity="0.12367510469606424"/>
                 
                 
-                <Fog visualRange="666.0"/>
+                <Fog visualRange="140734.99508193874"/>
                 
                 
-                <Precipitation intensity="708.0" precipitationType="rain"/>
+                <Precipitation intensity="1.6309399528215807" precipitationType="rain"/>
                 
               
               </Weather>

@@ -2,7 +2,7 @@
 <OpenSCENARIO>
   
     
-  <FileHeader author="3DCV-Generator" date="2020-09-10T17:00:09.539858+02:00" description="CARLA:FollowLeadingVehicle" revMajor="1" revMinor="0"/>
+  <FileHeader author="3DCV-Generator" date="2020-09-11T11:59:07.962082+02:00" description="CARLA:FollowLeadingVehicle" revMajor="1" revMinor="0"/>
   
     
   <ParameterDeclarations>
@@ -161,19 +161,19 @@
             <Environment name="Environment1">
               
                             
-              <TimeOfDay animation="false" dateTime="2020-10-03T19:45:00"/>
+              <TimeOfDay animation="false" dateTime="2020-10-03T04:56:00"/>
               
                             
               <Weather cloudState="skyOff">
                 
                                 
-                <Sun azimuth="955.0" elevation="302.0" intensity="658.0"/>
+                <Sun azimuth="4.960691753877518" elevation="2.4402315991131154" intensity="0.6662877441019762"/>
                 
                                 
-                <Fog visualRange="61.0"/>
+                <Fog visualRange="34207.7059379468"/>
                 
                                 
-                <Precipitation intensity="211.0" precipitationType="dry"/>
+                <Precipitation intensity="3.2145551308272813" precipitationType="rain"/>
                 
                             
               </Weather>
