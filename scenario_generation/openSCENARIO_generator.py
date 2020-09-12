@@ -13,6 +13,7 @@ import pytz
 from collections import defaultdict
 from hashlib import md5
 from manipulator import ConfigManipulator
+from values import GeneratorValues, ValTypes
 
 # group
 ENTITY_KEY = "EntityObject"
@@ -61,7 +62,6 @@ class ScenarioGenerator:
         self.schema_file_path = schema_file_path
         self.path_to_basic_scenarios = path_to_basic_scenarios
 
-        self.carla_info = {}
         self.values = _nested_dict()
 
     def run(self) -> None:
@@ -74,7 +74,7 @@ class ScenarioGenerator:
         scenarioFilenames = [f for f in listdir(self.path_to_basic_scenarios) if isfile(join(self.path_to_basic_scenarios, f))]
 
         scenarioFiles = []
-        for openScenrioFilename in scenarioFilenames:
+        for openScenrioFilename in scenarioFilenames[:1]:
             # read basic scenario and generate new Scenarios
             self.generateXmlScenariosFromBasic(openScenrioFilename)
 
@@ -85,10 +85,10 @@ class ScenarioGenerator:
 
         #The keys here match the keys in `changeable_attributes`
         #The mapping has to be done by hand though
-        self.values['Vehicle']['name'] = manipulator.get_vehicle_actors()
-        self.values['Pedestrian']['name'] = manipulator.get_actors('walker.')
+        self.values['Vehicle']['name'] = GeneratorValues(ValTypes.CATEGORICAL, manipulator.get_vehicle_actors(), None) 
+        self.values['Pedestrian']['name'] = GeneratorValues(ValTypes.CATEGORICAL, manipulator.get_actors('walker.'), None)
 
-        print(self.values)
+        #print(self.values)
         pass
 
     def inspect_schema(self) -> None:
@@ -108,8 +108,10 @@ class ScenarioGenerator:
         # For now just get the keys that the changeable attribute itself has
         for value in changeable_attributes:
             for a in self.xmlSchema.types[value].iter_components():
-                if type(a) == xmlschema.XsdAttribute:
-                    self.values[value][a.name]
+                if type(a) == xmlschema.XsdAttribute:   
+                    self.values[value][a.name] = GeneratorValues(ValTypes.get_key_for_val(a.type.name))
+                    if a.type.name in schema_restriction_values:
+                        self.values[value][a.name].val = self.xmlSchema.types[a.type.name].member_types[0].enumeration
 
 
     def saveFile(self,data:str, file_name:str) -> None:
@@ -139,9 +141,9 @@ class ScenarioGenerator:
     def random_date(self,start) -> datetime.datetime:
         return start + datetime.timedelta(minutes=random.randrange(1440))
 
-    def generateXmlScenariosFromBasic(self, openScenrioFilename: str):
+    def generateXmlScenariosFromBasic(self, openScenarioFilename: str):
 
-        basic_scenario = ET.parse(self.path_to_basic_scenarios + openScenrioFilename)
+        basic_scenario = ET.parse(self.path_to_basic_scenarios + openScenarioFilename)
         assert self.xmlSchema.is_valid(basic_scenario)
 
         new_scenario = basic_scenario
@@ -165,33 +167,58 @@ class ScenarioGenerator:
             root.find('FileHeader').set('author','3DCV-Generator')
             root.find('FileHeader').set('date',date_time)
 
-            for tag in changeable_attributes:
-                node = root.findall(f'.//{tag}')
+            for tag in self.values.keys():
+                nodes = root.findall(f'.//{tag}')
                 
-                if len(node) == 1 and node is not None:
+                if len(nodes) > 0:
+                    for node in nodes: 
                      # special case: Time of day:
-                    if node[0].tag == "TimeOfDay":
-                        newDate = self.random_date(datetime.datetime(2020, 10, 3,00,00)).isoformat()
-                        node[0].set("dateTime", str(newDate))
+                        if node.tag == "TimeOfDay":
+                            newDate = self.random_date(datetime.datetime(2020, 10, 3,00,00)).isoformat()
+                            node.set("dateTime", str(newDate))
+                            continue
 
-                    #set random values for complex types:
-                    if node[0].tag.lower() in lowercased_complex_type_values.keys():
-                        for item in node[0].items():
-                            if item[0].lower() not in lowercased_restriction_values:
-                                # TODO: what are realtsic ranges for those values ? 
+                        items = node.items()
+                
+                        for (item_tag, gen_vals) in self.values[tag].items():
+
+                            item = [a for a in items if a[0] == item_tag][0]
+
+                            if gen_vals.type == ValTypes.DOUBLE:
                                 if float(item[1]) != 0.0:
                                     new_value = float(item[1]) + float(item[1]) *random.uniform(-1,1)
                                 else:
                                     new_value = float(random.uniform(0,10))
 
-                                #print(f'before {item[0]}, {item[1]}')
-                                node[0].set(item[0], str(new_value))
-                                #print(f'after {node[0].items()}')
+                            elif gen_vals.type == ValTypes.CATEGORICAL:
+                                new_value = random.choice(gen_vals.val)
+                            
+                            else:
+                                #TODO
+                                continue
+                            
+                            print('Setting {} to new value {}'.format(item[0], str(new_value)))
+                            node.set(item[0], str(new_value))
 
-                    # set random value for restricted catagorial types:
-                    for item in node[0].keys():
-                        if item.lower() in lowercased_restriction_values.keys():
-                            node[0].set(item,random.choice(lowercased_restriction_values[item.lower()]))
+                        #set random values for complex types:
+                        """ if node.tag in self.values[tag].keys():#We can change this element #lowercased_complex_type_values.keys():
+                            for item in node.items():
+                                print(self.values[item])
+                                if item[0].lower() not in lowercased_restriction_values:
+                                    # TODO: what are realtsic ranges for those values ? 
+                                    if float(item[1]) != 0.0:
+                                        new_value = float(item[1]) + float(item[1]) *random.uniform(-1,1)
+                                    else:
+                                        new_value = float(random.uniform(0,10))
+
+                                    #print(f'before {item[0]}, {item[1]}')
+                                    node.set(item[0], str(new_value))
+                                    #print(f'after {node[0].items()}')
+
+                        # set random value for restricted catagorial types:
+                        for item in node.keys():
+                            if item.lower() in lowercased_restriction_values.keys():
+                                node.set(item,random.choice(lowercased_restriction_values[item.lower()])) """
 
             #validate xosc again with schema
             assert self.xmlSchema.is_valid(new_scenario)
@@ -203,7 +230,7 @@ class ScenarioGenerator:
             else:
                 prettyfied_scenario = self.prettify(new_scenario)
                 self.generated_scenarios_hashs.append(new_scenario.__hash__())
-                self.saveFile(prettyfied_scenario, f"{os.path.splitext(openScenrioFilename)[0]}_{i}")
+                self.saveFile(prettyfied_scenario, f"{os.path.splitext(openScenarioFilename)[0]}_{i}")
 
 def _nested_dict():
     return defaultdict(_nested_dict)
@@ -218,8 +245,8 @@ if __name__ == "__main__":
     save_dir = args.save_path
     number_scenarios = args.number_scenarios
 
-    XML_SCHEMA_FILE_PATH = "OpenSCENARIO.xsd"
-    PATH_TO_BASIC_SCENARIOS = "./basic_scenarios/"
+    XML_SCHEMA_FILE_PATH = "scenario_generation/OpenSCENARIO.xsd"
+    PATH_TO_BASIC_SCENARIOS = "scenario_generation/basic_scenarios/"
 
     #init
     generator = ScenarioGenerator(
