@@ -423,6 +423,7 @@ TSWLatexianTemp*
 
 
 #ignore generated xml files
-./scenario_generation/generated_scenarios
+
+generated_scenarios/
 
 .vscode
