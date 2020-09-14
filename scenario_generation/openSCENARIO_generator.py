@@ -164,7 +164,7 @@ class ScenarioGenerator:
             date_time = datetime.datetime.now(pytz.timezone('Europe/Paris')).isoformat()
 
             # adapt fileheader changes
-            root.find('FileHeader').set('author','3DCV-Generator')
+            root.find('FileHeader').set('author','CARLA:3DCV-Generator')
             root.find('FileHeader').set('date',date_time)
 
             for tag in self.values.keys():
