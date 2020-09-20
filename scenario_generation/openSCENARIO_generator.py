@@ -74,7 +74,7 @@ class ScenarioGenerator:
         scenarioFilenames = [f for f in listdir(self.path_to_basic_scenarios) if isfile(join(self.path_to_basic_scenarios, f))]
 
         scenarioFiles = []
-        for openScenrioFilename in scenarioFilenames[:1]:
+        for openScenrioFilename in scenarioFilenames:
             # read basic scenario and generate new Scenarios
             self.generateXmlScenariosFromBasic(openScenrioFilename)
 
@@ -190,7 +190,7 @@ class ScenarioGenerator:
                                 else:
                                     new_value = float(random.uniform(0,10))
 
-                            elif gen_vals.type == ValTypes.CATEGORICAL:
+                            elif gen_vals.type == ValTypes.CATEGORICAL and len(gen_vals.val) > 0:
                                 new_value = random.choice(gen_vals.val)
                             
                             else:
@@ -199,26 +199,6 @@ class ScenarioGenerator:
                             
                             print('Setting {} to new value {}'.format(item[0], str(new_value)))
                             node.set(item[0], str(new_value))
-
-                        #set random values for complex types:
-                        """ if node.tag in self.values[tag].keys():#We can change this element #lowercased_complex_type_values.keys():
-                            for item in node.items():
-                                print(self.values[item])
-                                if item[0].lower() not in lowercased_restriction_values:
-                                    # TODO: what are realtsic ranges for those values ? 
-                                    if float(item[1]) != 0.0:
-                                        new_value = float(item[1]) + float(item[1]) *random.uniform(-1,1)
-                                    else:
-                                        new_value = float(random.uniform(0,10))
-
-                                    #print(f'before {item[0]}, {item[1]}')
-                                    node.set(item[0], str(new_value))
-                                    #print(f'after {node[0].items()}')
-
-                        # set random value for restricted catagorial types:
-                        for item in node.keys():
-                            if item.lower() in lowercased_restriction_values.keys():
-                                node.set(item,random.choice(lowercased_restriction_values[item.lower()])) """
 
             #validate xosc again with schema
             assert self.xmlSchema.is_valid(new_scenario)

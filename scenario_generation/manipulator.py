@@ -1,11 +1,12 @@
 import carla
 import random
 from typing import List
+import itertools
 
 class ConfigManipulator:
     def __init__(self, world_name: str = "Town01", host: str = "localhost", port: int = 2000):
         self.client = carla.Client(host, port)
-        self.client.load_world(world_name)
+        #self.client.load_world(world_name)
         self.world = self.client.get_world()
 
 
@@ -57,7 +58,62 @@ class ConfigManipulator:
 
 if __name__ == "__main__":
     
-    #m = ConfigManipulator(world_name = "Town01")
+    m = ConfigManipulator(world_name = "Town01")
 
-    #print(m.get_random_actor('vehicle'))
+    #print([a for a in m.world.get_actors() if a.type_id == 'vehicle.tesla.model3'])
+    v = [a for a in m.world.get_actors() if a.type_id == 'vehicle.tesla.model3'][0]
+    b = [a for a in m.world.get_actors() if a.type_id == 'vehicle.diamondback.century'][0]
+
+    ptv = m.world.get_map().get_waypoint(v.get_location())
+    ptb = b.get_transform()#m.world.get_map().get_waypoint(b.get_location())
+    wpb = m.world.get_map().get_waypoint(b.get_location())
+
+    wp = [a for a in list(itertools.chain(*m.world.get_map().get_topology())) if a.is_junction]
+
+    dists = sorted(ptv.transform.location.distance(a.transform.location) for a in wp)
+
+    for i in dists:
+        if ptv.next(i)[0].is_junction:
+            print(i)
+            next_junction = ptv.next(i)[0]
+            break
+
+    print('base waypoint:')
+    print(next_junction)
+    #print([(a.transform.location.x, a.transform.location.y, a.transform.location.z) for a in ptv.next(50)])
+    print('vehicle pos:')
+    print(ptv)
+    print('bike pos:')
+    print(ptb)
+    print(wpb)
+
+    print('Bike distance to base')
+    print(next_junction.transform.location.distance(wpb.transform.location))
+
+    print('Bike offset')
+    print()
+
+    print('')
+
+
+
+    new_junction = random.choice(wp)
+    new_wp = new_junction.previous(28.6)
+
+
+    print('new junction:')
+    print(new_junction)
+    print('new car spawn:')
+    print([(a.transform.location.x, a.transform.location.y, a.transform.location.z, a.transform.rotation.yaw) for a in new_wp])
+    #print([(a.transform.get_forward_vector().x, a.transform.get_forward_vector().y, a.transform.get_right_vector().x, a.transform.get_right_vector().y) for a in new_wp])
+
+    new_yaw = [a.transform.rotation.yaw for a in new_wp][0]
+
+    print([((ptv.transform.rotation.yaw) - (wpb.transform.rotation.yaw ) + 360)%360 for a in new_junction.next(next_junction.transform.location.distance(wpb.transform.location))])
+
+    print('new bike spawn:')
+    print([(a.transform.location.x, a.transform.location.y, a.transform.location.z, a.transform.rotation.yaw) for a in new_junction.next(next_junction.transform.location.distance(wpb.transform.location)) if (a.transform.rotation.yaw - new_yaw) - (wpb.transform.rotation.yaw - ptv.transform.rotation.yaw) < abs(90)])
+    
+
+
     pass
