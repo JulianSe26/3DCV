@@ -72,6 +72,12 @@ if __name__ == "__main__":
 
     dists = sorted(ptv.transform.location.distance(a.transform.location) for a in wp)
 
+    waypoints = m.world.get_map().generate_waypoints(100)
+    for w in waypoints:
+        m.world.debug.draw_string(w.transform.location, f'O [{w.transform.location} \n {w.transform.rotation.yaw}]', draw_shadow=False,
+                                        color=carla.Color(r=255, g=0, b=0), life_time=1200.0,
+                                        persistent_lines=True)
+
     for i in dists:
         if ptv.next(i)[0].is_junction:
             print(i)
