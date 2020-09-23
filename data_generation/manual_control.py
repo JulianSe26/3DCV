@@ -253,7 +253,7 @@ class KeyboardControl(object):
 
 
 class HUD(object):
-    def __init__(self, width, height):
+    def __init__(self, width, height, episode):
         self.dim = (width, height)
         font = pygame.font.Font(pygame.font.get_default_font(), 20)
         fonts = [x for x in pygame.font.get_fonts() if 'mono' in x]
@@ -269,8 +269,12 @@ class HUD(object):
         self._show_info = True
         self._info_text = []
         self._server_clock = pygame.time.Clock()
-
-        self.current_frame = 0
+        
+        self._episode = episode
+        self._current_frame = 0
+        self._dir = os.path.join('_out/', self._episode.zfill(5) ,'/')
+        if not os.path.exists(dir):
+            os.mkdir(dir)
 
     def on_world_tick(self, timestamp):
         self._server_clock.tick()
@@ -283,13 +287,10 @@ class HUD(object):
 
         # clock.get_fps()
 
-        self.current_frame += 1
-        frame = str(self.current_frame).zfill(5)
+        self._current_frame += 1
+        frame = str(self._current_frame).zfill(5)
 
-        dir = '_out/episode00001/'
-        if not os.path.exists(dir):
-            os.mkdir(dir)
-        with open(os.path.join(dir, 'measurements_' + frame + '.json'), 'w') as fo:
+        with open(os.path.join(self._dir, 'measurements_' + frame + '.json'), 'w') as fo:
             jsonObj = {}
             jsonObj.update({'steer': control.steer})
             jsonObj.update({'throttle': control.throttle})
@@ -648,7 +649,7 @@ def game_loop(args):
             (args.width, args.height),
             pygame.HWSURFACE | pygame.DOUBLEBUF)
 
-        hud = HUD(args.width, args.height)
+        hud = HUD(args.width, args.height, args.episode)
         world = World(client.get_world(), hud)
         controller = KeyboardControl(world, args.autopilot)
 
@@ -689,6 +690,10 @@ def main():
         default='127.0.0.1',
         help='IP of the host server (default: 127.0.0.1)')
     argparser.add_argument(
+        '--episode',
+        metavar='e',
+        help='episode number')
+    argparser.add_argument(
         '-p', '--port',
         metavar='P',
         default=2000,
@@ -706,7 +711,7 @@ def main():
     args = argparser.parse_args()
 
     args.width, args.height = [int(x) for x in args.res.split('x')]
-
+    
     log_level = logging.DEBUG if args.debug else logging.INFO
     logging.basicConfig(format='%(levelname)s: %(message)s', level=log_level)
 
