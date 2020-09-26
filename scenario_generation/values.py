@@ -6,7 +6,7 @@ schema_restriction_values = [
     "MiscObjectCategory",
     "ObjectType",
     "PrecipitationType",
-    "VehicleCategory",
+    #"VehicleCategory",
     "Rule",
     "PedestrianCategory",
     "RouteStrategy"

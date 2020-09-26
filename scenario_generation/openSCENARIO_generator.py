@@ -33,7 +33,7 @@ schema_restriction_values = [
     "MiscObjectCategory",
     "ObjectType",
     "PrecipitationType",
-    "VehicleCategory",
+   # "VehicleCategory",
     "Rule",
     "PedestrianCategory",
     "RouteStrategy"
@@ -62,6 +62,8 @@ class ScenarioGenerator:
         self.schema_file_path = schema_file_path
         self.path_to_basic_scenarios = path_to_basic_scenarios
 
+        self.manipulator = None
+
         self.values = _nested_dict()
 
     def run(self) -> None:
@@ -81,12 +83,12 @@ class ScenarioGenerator:
 
     def fetch_data_from_carla(self, scenario_town: str) -> None:
         # TODO enrich categorial values for pedestrian group and vehicle.car types from CARLA server
-        manipulator = ConfigManipulator(world_name=scenario_town)
+        self.manipulator = ConfigManipulator(world_name=scenario_town)
 
         #The keys here match the keys in `changeable_attributes`
         #The mapping has to be done by hand though
-        self.values['Vehicle']['name'] = GeneratorValues(ValTypes.CATEGORICAL, manipulator.get_vehicle_actors(), None) 
-        self.values['Pedestrian']['name'] = GeneratorValues(ValTypes.CATEGORICAL, manipulator.get_actors('walker.'), None)
+        self.values['Vehicle']['name'] = GeneratorValues(ValTypes.CATEGORICAL, self.manipulator.get_vehicle_actors(), None) 
+        self.values['Pedestrian']['name'] = GeneratorValues(ValTypes.CATEGORICAL, self.manipulator.get_actors('walker.'), None)
 
         #print(self.values)
         pass
@@ -199,6 +201,19 @@ class ScenarioGenerator:
                             
                             print('Setting {} to new value {}'.format(item[0], str(new_value)))
                             node.set(item[0], str(new_value))
+
+            print(openScenarioFilename)
+            if openScenarioFilename == 'CyclistCrossing.xosc':
+                new_car_spawn, new_bike_spawn = self.manipulator.cyclist_scenario()
+                for actor in root.find('Storyboard').find('Init').find('Actions').findall('Private'):
+                    pos = actor.find('PrivateAction').find('TeleportAction').find('Position').find('WorldPosition')
+                    if actor.get('entityRef') == 'hero':
+                        spawn = new_car_spawn
+                    elif actor.get('entityRef') == 'adversary':
+                        spawn = new_bike_spawn
+                    pos.set('x', str(spawn[0]))
+                    pos.set('y', str(spawn[1]))
+                    pos.set('h', str(spawn[2]))
 
             #validate xosc again with schema
             assert self.xmlSchema.is_valid(new_scenario)

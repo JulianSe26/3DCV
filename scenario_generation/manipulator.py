@@ -2,6 +2,8 @@ import carla
 import random
 from typing import List
 import itertools
+import math
+import numpy as np
 
 class ConfigManipulator:
     def __init__(self, world_name: str = "Town01", host: str = "localhost", port: int = 2000):
@@ -55,70 +57,140 @@ class ConfigManipulator:
         """
         return random.choices(data, k=num)
 
+    def rotate2d(self, x:float, y:float, radians:float):
+        """required helper method to rotate a 2d vector by radians
+        """
+        c, s = np.cos(radians), np.sin(radians)
+        j = np.matrix([[c, s], [-s, c]])
+        m = np.dot(j, [x, y])
+        return float(m.T[0]), float(m.T[1])
+
+    def cyclist_scenario(self):
+
+        # Get vehicle v and bike b. Then get their closest waypoints and their actual locations
+        v = [a for a in self.world.get_actors() if 'role_name' in a.attributes.keys() and a.attributes['role_name'] == 'hero'][0]
+        b = [a for a in self.world.get_actors() if 'role_name' in a.attributes.keys() and a.attributes['role_name'] == 'adversary'][0]
+
+        wpv = self.world.get_map().get_waypoint(v.get_location())
+        ptb = b.get_transform()
+        wpb = self.world.get_map().get_waypoint(b.get_location())
+
+        # get all junctions described by the map topology and order them according to their distance to the hero
+        # The closest junction (when driving forward) is the 'base junction' that is used as the scenario anchor
+        wp = [a for a in list(itertools.chain(*self.world.get_map().get_topology())) if a.is_junction]
+        dists = sorted(wpv.transform.location.distance(a.transform.location) for a in wp)
+        for i in dists:
+            if wpv.next(i)[0].is_junction:
+                closest_junction = wpv.next(i)[0]
+                break
+
+        # The bike's position is not considered a waypoint by carla. However it is way easier using waypoints for calculations so we calculate an offset to the bike's closest waypoint
+        # that we will later reapply 
+        bike_offset = (ptb.location.x - wpb.transform.location.x, ptb.location.y - wpb.transform.location.y, math.radians((ptb.rotation.yaw - wpb.transform.rotation.yaw)%360))
+
+        bike_spawn_wp = []
+        new_car_spawn_wp_good = False
+
+        # Not all positions calculated actually work. Therefore we include two sanity checks 
+        while len(bike_spawn_wp) == 0 or not new_car_spawn_wp_good:
+
+            # Choose a random junction on the map 
+            new_junction = random.choice(wp)
+
+            # Get the hero's new waypoint including heading in relation to the new junction
+            # Declare the spawn point as valid if the car's yaw is roughly the same as the junction's yaw
+            new_car_spawn = [(a.transform.location.x, a.transform.location.y, a.transform.rotation.yaw) for a in new_junction.previous(wpv.transform.location.distance(closest_junction.transform.location))][0]
+            new_car_spawn_wp_good = abs(new_junction.transform.rotation.yaw - new_car_spawn[2]) < 45
+
+            # Calculate the new spawn point of the bike
+            # Get a waypoint that is the same distance away from the base junction as in the base scenario
+            # Check if the relation of the hero's and adversary's heading matches at the new wp
+            bike_spawn_wp = [(a.transform.location.x, a.transform.location.y, a.transform.location.z, a.transform.rotation.yaw) for a in new_junction.next(closest_junction.transform.location.distance(wpb.transform.location)) if abs((a.transform.rotation.yaw - new_car_spawn[2]) - (wpb.transform.rotation.yaw - wpv.transform.rotation.yaw)) < 50]
+        
+        new_offset = self.rotate2d(*bike_offset)
+        new_bike_spawn = (bike_spawn_wp[0][0] - new_offset[0], bike_spawn_wp[0][1] - new_offset[1], math.radians(new_car_spawn[2]))
+        new_car_spawn = list(new_car_spawn)
+        new_car_spawn[2] = math.radians(new_car_spawn[2])
+        new_car_spawn = tuple(new_car_spawn)
+
+        return new_car_spawn, new_bike_spawn
+
 
 if __name__ == "__main__":
     
     m = ConfigManipulator(world_name = "Town01")
 
-    #print([a for a in m.world.get_actors() if a.type_id == 'vehicle.tesla.model3'])
-    v = [a for a in m.world.get_actors() if a.type_id == 'vehicle.tesla.model3'][0]
-    b = [a for a in m.world.get_actors() if a.type_id == 'vehicle.diamondback.century'][0]
+    v = [a for a in m.world.get_actors() if 'role_name' in a.attributes.keys() and a.attributes['role_name'] == 'hero'][0]
+    b = [a for a in m.world.get_actors() if 'role_name' in a.attributes.keys() and a.attributes['role_name'] == 'adversary'][0]
 
-    ptv = m.world.get_map().get_waypoint(v.get_location())
-    ptb = b.get_transform()#m.world.get_map().get_waypoint(b.get_location())
+    wpv = m.world.get_map().get_waypoint(v.get_location())
+    ptb = b.get_transform()
     wpb = m.world.get_map().get_waypoint(b.get_location())
 
     wp = [a for a in list(itertools.chain(*m.world.get_map().get_topology())) if a.is_junction]
 
-    dists = sorted(ptv.transform.location.distance(a.transform.location) for a in wp)
+    dists = sorted(wpv.transform.location.distance(a.transform.location) for a in wp)
 
     waypoints = m.world.get_map().generate_waypoints(100)
-    for w in waypoints:
-        m.world.debug.draw_string(w.transform.location, f'O [{w.transform.location} \n {w.transform.rotation.yaw}]', draw_shadow=False,
-                                        color=carla.Color(r=255, g=0, b=0), life_time=1200.0,
-                                        persistent_lines=True)
+    #for w in waypoints:
+        #m.world.debug.draw_string(w.transform.location, f'O [{w.transform.location} \n {w.transform.rotation.yaw}]', draw_shadow=False,
+                                        #color=carla.Color(r=255, g=0, b=0), life_time=1200.0,
+                                        #persistent_lines=True)
 
     for i in dists:
-        if ptv.next(i)[0].is_junction:
+        if wpv.next(i)[0].is_junction:
             print(i)
-            next_junction = ptv.next(i)[0]
+            closest_junction = wpv.next(i)[0]
             break
 
     print('base waypoint:')
-    print(next_junction)
-    #print([(a.transform.location.x, a.transform.location.y, a.transform.location.z) for a in ptv.next(50)])
+    print(closest_junction)
+    #print([(a.transform.location.x, a.transform.location.y, a.transform.location.z) for a in wpv.next(50)])
     print('vehicle pos:')
-    print(ptv)
+    print(wpv)
     print('bike pos:')
     print(ptb)
     print(wpb)
 
     print('Bike distance to base')
-    print(next_junction.transform.location.distance(wpb.transform.location))
+    print(closest_junction.transform.location.distance(wpb.transform.location))
 
-    print('Bike offset')
-    print()
+    print('Bike offset relative to wp')
+    bike_offset = (ptb.location.x - wpb.transform.location.x, ptb.location.y - wpb.transform.location.y, math.radians((ptb.rotation.yaw - wpb.transform.rotation.yaw)%360))
+    print(bike_offset)
 
     print('')
 
+    bike_spawn_wp = []
+    new_car_spawn_wp_good = False
 
+    while len(bike_spawn_wp) == 0 or not new_car_spawn_wp_good:
 
-    new_junction = random.choice(wp)
-    new_wp = new_junction.previous(28.6)
+        new_junction = random.choice(wp)
+        new_wp = new_junction.previous(28.6)
+        new_yaw = [a.transform.rotation.yaw for a in new_wp][0]
 
+        new_car_spawn = [(a.transform.location.x, a.transform.location.y, a.transform.location.z, a.transform.rotation.yaw) for a in new_wp][0]
+        new_car_spawn_wp_good = abs(new_junction.transform.rotation.yaw - new_car_spawn[3]) < 45
+
+        bike_spawn_wp = [(a.transform.location.x, a.transform.location.y, a.transform.location.z, a.transform.rotation.yaw) for a in new_junction.next(closest_junction.transform.location.distance(wpb.transform.location)) if abs((a.transform.rotation.yaw - new_yaw) - (wpb.transform.rotation.yaw - wpv.transform.rotation.yaw)) < 50]
+        
 
     print('new junction:')
     print(new_junction)
     print('new car spawn:')
-    print([(a.transform.location.x, a.transform.location.y, a.transform.location.z, a.transform.rotation.yaw) for a in new_wp])
+
+    print(new_car_spawn)
     #print([(a.transform.get_forward_vector().x, a.transform.get_forward_vector().y, a.transform.get_right_vector().x, a.transform.get_right_vector().y) for a in new_wp])
 
-    new_yaw = [a.transform.rotation.yaw for a in new_wp][0]
+    print([((wpv.transform.rotation.yaw) - (wpb.transform.rotation.yaw ) + 360)%360 for a in new_junction.next(closest_junction.transform.location.distance(wpb.transform.location))])
 
-    print([((ptv.transform.rotation.yaw) - (wpb.transform.rotation.yaw ) + 360)%360 for a in new_junction.next(next_junction.transform.location.distance(wpb.transform.location))])
-
+    print('new bike spawn wp:')
+    print(bike_spawn_wp)
     print('new bike spawn:')
-    print([(a.transform.location.x, a.transform.location.y, a.transform.location.z, a.transform.rotation.yaw) for a in new_junction.next(next_junction.transform.location.distance(wpb.transform.location)) if (a.transform.rotation.yaw - new_yaw) - (wpb.transform.rotation.yaw - ptv.transform.rotation.yaw) < abs(90)])
+    new_offset = m.rotate2d(*bike_offset)
+    print(new_offset)
+    print((bike_spawn_wp[0][0] - new_offset[0], bike_spawn_wp[0][1] - new_offset[1]))
     
 
 
