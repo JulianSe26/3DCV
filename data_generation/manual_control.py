@@ -272,9 +272,44 @@ class HUD(object):
         
         self._episode = episode
         self._current_frame = 0
+
+        if not os.path.exists('_out/'):
+            os.mkdir('_out/')
+
+        if episode = 1:
+            with open(os.path.join('_out/dataset_metadata.json'), 'w') as fo:
+                jsonObj = {}
+                jsonObj.update(settings_module.sensors_yaw)
+                jsonObj.update({'fov': 100})
+                jsonObj.update({'width': width})
+                jsonObj.update({'height': height})
+                jsonObj.update({'lateral_noise_percentage': 0})
+                jsonObj.update({'longitudinal_noise_percentage': 0})
+                jsonObj.update({'car range': 0})
+                jsonObj.update({'pedestrian range': 0})
+                jsonObj.update({'set_of_weathers': 0})
+                fo.write(json.dumps(jsonObj, sort_keys=True, indent=4))
+
+
+
         self._dir = os.path.join('_out/', self._episode.zfill(5) ,'/')
         if not os.path.exists(dir):
             os.mkdir(dir)
+     
+        with open(os.path.join('_out/', self._episode.zfill(5) ,'/episode_metadata.json'), 'w') as fo:
+            jsonObj = {}
+            jsonObj.update(settings_module.sensors_yaw)
+            jsonObj.update({'fov': 100})
+            jsonObj.update({'width': width})
+            jsonObj.update({'height': height})
+            jsonObj.update({'lateral_noise_percentage': 0})
+            jsonObj.update({'longitudinal_noise_percentage': 0})
+            jsonObj.update({'car range': 0})
+            jsonObj.update({'pedestrian range': 0})
+            jsonObj.update({'set_of_weathers': 0})
+            fo.write(json.dumps(jsonObj, sort_keys=True, indent=4))
+
+
 
     def on_world_tick(self, timestamp):
         self._server_clock.tick()
@@ -718,6 +753,8 @@ def main():
     logging.info('listening to server %s:%s', args.host, args.port)
 
     print(__doc__)
+
+
 
     try:
 
