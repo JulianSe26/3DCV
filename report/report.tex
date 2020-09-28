@@ -46,11 +46,13 @@
 \maketitle
 
 \begin{abstract}
+	In this project report, we present an approach for generating new scenarios for supporting autonomous driving tasks in critical situations using the CARLA simulator along with it's Scenario-Runner. Our approach consists of generating new XML-based OPENScenario files which can be interpreted by the Scenario-Runner. Based on already present basic Scenarios, we apply a variety  of changes to attributes which are crucial for different sensors of an autonomous car. We considered external factors like weather, road conditions, time of day, color and models of cars, cyclists and pedestrians. In a second step, we transform the scenarios to different places in the same town and to different towns. To ensure the novel generated scenarios are valid, we consider different sanity checks as well as a specific verification to avoid duplicating scenarios.
+	Also, we use the generated scenarios for training a model using imitation learning. TODO..
 
 \end{abstract}
 
 \begin{IEEEkeywords}
-
+CARLA simulator, Scenario generation, Critical driving scenarios, Imitation learning, Autonomous driving
 \end{IEEEkeywords}
 
 \section{Introduction}
@@ -140,7 +142,6 @@ The overall generator-flow is shown in figure \ref{fig:generator-flowchart}.
 
 TBD:
  Attribute tree 
-+ Spawn points und map change
 
 \begin{figure}[ht]
 	\centering
@@ -165,12 +166,37 @@ In addition, we generate a random time of day for every new scenario to cover al
 
 To also simulate a variety of different road conditions, we include a random generated friction scale factor for every new scenario. Those factors can be influenced by many external effects like oil spilled on the road.
 
+However, these attributes are independent from the original spawn-position of all actors. As an additional requirement, the generation of new scenarios should include a relocation of the scene to another suitable place in 
+the same map or even in a different map.
+For this, we first analyze the initial situation by fetching the closest town specific waypoints based on the initial actor position. To get information about the scenario circumstances we use a simple approach to detect whether the scenario takes place on a intersection by calculating and comparing the distances between the actors and the hero (ego-vehicle) actor to the next intersection in driving direction. If the latter distance is less, we conclude that the scenario must take place at an intersection. This information is valuable for shifting the scenario to another  position in the same or different town. We do this with respect to all the conditions given by the initial scenario for instance retaining distances between all actors.
+
+If we conclude that the scenario takes place at an intersection, we fetch all possible junctions using the Python API of CARLA for a specific map. The closest junction in driving direction is used  as the scenario anchor. 
+
+For some scenarios, it is typical that actor positions like for pedestrians or cyclists are not considered as waypoints since they spawn off-road.  If we detect such a deviation we calculate a offset between the actual actor position and the nearest waypoint. To apply the correct orientation we rotate the position of the actor with respect to the new orientation of the road.
+
+\begin{equation}
+	M = \left(\begin{matrix} cos(\alpha) & sin(\alpha) \\ - sin(\alpha) & cos(\alpha) \end{matrix}\right) *  \left(\begin{matrix} x \\ y \end{matrix}\right) 
+\end{equation}
+
+tbd. picture of bike scenario + mit distancen
+
+Not all positions calculated will work on different maps. Therefore we include two sanity checks when calculating new actor positions. 
+
 The part of the configuration, which is more difficult to vary is with regards to further actors, such as pedestrians and other vehicles.
 These have to be spawned somewhere and a behavior needs to be defined.
-CARLA provides a list of possible spawn points across a map, but if we just choose these randomly, we cannot be sure, that the spawned car has an impact on our scenario.
-Furthermore, the behavior of the cars is rather non-trivial.
+CARLA provides a list of possible spawn points across a specific map, but if we just choose these randomly, we cannot be sure, that the spawned car has an impact on our scenario.
 Most importantly, the behavior of the car, which characterizes the critical scenario needs to well defined.
 But apart from that, we also want vehicles in the background, that drive around somewhat automated.
+
+\subsection{Limitations}
+Kein Einfluss auf Autopilot route, nicht deterministisch. Pro intersection gibt es Wahrscheinlichkeiten die zum Moment nicht beeinflussbar sind. Eigentliche Route kann vom Agent geplant werden.
+
++ problems faced:
+\begin{itemize}
+	\item Keine semantische informationen  bei scenarios
+	\item nur 5 basis scenarien, um komplett neue situationen zu definieren, müssten neue basis scenarien generiert werden.
+	\item ...
+\end{itemize}
 
 \subsection{Imitation Learning Approach}
 tbd,.
@@ -181,8 +207,7 @@ tbd.
 
 
 \section{Conclusion}
-
-Beantwortung der questions (aus den Folien zu unserem Thema entnommen):
+To conclude this report, we try to answer three research questions based on the outcome of our experiments.
 
 • Can we generate critical scenarios such that a model trained
 on these scenarios achieves robustness against critical
@@ -194,13 +219,6 @@ critical scenarios?
 
 • Does robustness against a certain type of critical scenario
 transfer to a different type of critical scenario?
-
-+ problems faced:
-\begin{itemize}
-	\item Keine semantische informationen  bei scenarios
-	\item nur 5 basis scenarien, um komplett neue situationen zu definieren, müssten neue basis scenarien generiert werden.
-	\item ...
-\end{itemize}
 
 \printbibliography
 
