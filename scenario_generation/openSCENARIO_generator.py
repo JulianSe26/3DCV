@@ -14,6 +14,7 @@ from collections import defaultdict
 from hashlib import md5
 from manipulator import ConfigManipulator
 from values import GeneratorValues, ValTypes
+import math
 
 # group
 ENTITY_KEY = "EntityObject"
@@ -76,9 +77,10 @@ class ScenarioGenerator:
         scenarioFilenames = [f for f in listdir(self.path_to_basic_scenarios) if isfile(join(self.path_to_basic_scenarios, f))]
 
         scenarioFiles = []
-        for openScenrioFilename in scenarioFilenames:
+        for openScenarioFilename in scenarioFilenames:
             # read basic scenario and generate new Scenarios
-            self.generateXmlScenariosFromBasic(openScenrioFilename)
+            if openScenarioFilename == 'CyclistCrossing.xosc':
+                self.generateXmlScenariosFromBasic(openScenarioFilename)
 
 
     def fetch_data_from_carla(self, scenario_town: str) -> None:
@@ -204,7 +206,7 @@ class ScenarioGenerator:
 
             print(openScenarioFilename)
             if openScenarioFilename == 'CyclistCrossing.xosc':
-                new_car_spawn, new_bike_spawn = self.manipulator.cyclist_scenario()
+                new_car_spawn, new_bike_spawn = self.manipulator.cyclist_scenario(self.get_pos_for_role(root, 'hero'), self.get_pos_for_role(root, 'adversary'))
                 for actor in root.find('Storyboard').find('Init').find('Actions').findall('Private'):
                     pos = actor.find('PrivateAction').find('TeleportAction').find('Position').find('WorldPosition')
                     if actor.get('entityRef') == 'hero':
@@ -226,6 +228,11 @@ class ScenarioGenerator:
                 prettyfied_scenario = self.prettify(new_scenario)
                 self.generated_scenarios_hashs.append(new_scenario.__hash__())
                 self.saveFile(prettyfied_scenario, f"{os.path.splitext(openScenarioFilename)[0]}_{i}")
+
+    def get_pos_for_role(self, scenario_root, role:str) -> tuple:
+        actor = [a for a in scenario_root.find('Storyboard').find('Init').find('Actions').findall('Private') if a.get('entityRef') == role][0]
+        pos = actor.find('PrivateAction').find('TeleportAction').find('Position').find('WorldPosition')
+        return {'x': float(pos.get('x')), 'y': float(pos.get('y')), 'z': float(pos.get('z')), 'yaw': math.degrees(float(pos.get('h')))}
 
 def _nested_dict():
     return defaultdict(_nested_dict)
