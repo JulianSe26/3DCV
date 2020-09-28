@@ -138,10 +138,9 @@ To generate new values for selected parameters, we use the schema file for openS
  Therefore we extract available information for example of the \texttt{<weather>}-tag, which has an attribute \texttt{cloudState} that only accepts values of a predefined enum type. Our generator would extract all possible values which is in the mentioned case a set of ["\texttt{free}", "\texttt{cloudy}", "\texttt{overcast}", "\texttt{rainy}", "\texttt{skyOff}"]. With the information of all attributes and their data-types and the basic scenario as template, new scenarios are generated. We also extract the information about the map, the scenario plays in. This is a prerequisite for extracting values of pedestrian and vehicle types from the CARLA Python API, since the valid and possible values of those attributes depend on the actual map.
  For all the tags which include attributes of categorical values we apply a random choice on all possible values. In the case of numeric attributes, we change the values based on the set values in a range of [-100\%, +100\%].
  For every base scenario which is accessible, the user can specify how many additional scenarios should be created. After every new scenario, we use a hash value based comparison on the document to execute a duplication check such that we avoid the generation of the exact the same scenario twice.
-The overall generator-flow is shown in figure \ref{fig:generator-flowchart}.
+The overall generator-flow is shown in Figure \ref{fig:generator-flowchart}.
 
-TBD:
- Attribute tree 
+For the internal representation we use a dictionary based attribute tree structure which represents the tree structure of the OPENScenario schema file for selected attributes defined as changeable, where every leaf represents a possible value if its a categorical type.
 
 \begin{figure}[ht]
 	\centering
@@ -172,13 +171,21 @@ For this, we first analyze the initial situation by fetching the closest town sp
 
 If we conclude that the scenario takes place at an intersection, we fetch all possible junctions using the Python API of CARLA for a specific map. The closest junction in driving direction is used  as the scenario anchor. 
 
-For some scenarios, it is typical that actor positions like for pedestrians or cyclists are not considered as waypoints since they spawn off-road.  If we detect such a deviation we calculate a offset between the actual actor position and the nearest waypoint. To apply the correct orientation we rotate the position of the actor with respect to the new orientation of the road.
+For some scenarios, it is typical that actor positions like for pedestrians or cyclists are not considered as waypoints since they spawn off-road.  If we detect such a deviation, we calculate an offset between the actual actor position and the nearest waypoint. To apply the correct orientation to a new position $p^{new}$, we rotate the initial position of the actor $p = (p_x,p_y,p_z)$ subtracted the nearest waypoint $w = (w_x, w_y, w_z)$ with respect to the new orientation of the road $\Delta yaw = w_{yaw} - p^{new}_{yaw}$  using a rotation matrix with the difference in x direction $p_x - w_x$ and y direction $p_y - w_y$ indicated with $\Delta x$ and $\Delta y$ respectively:
 
 \begin{equation}
-	M = \left(\begin{matrix} cos(\alpha) & sin(\alpha) \\ - sin(\alpha) & cos(\alpha) \end{matrix}\right) *  \left(\begin{matrix} x \\ y \end{matrix}\right) 
+	p_{new} = \left(\begin{matrix} cos(\Delta yaw) & sin(\Delta yaw) \\ - sin(\Delta yaw) & cos(\Delta yaw) \end{matrix}\right) *  \left(\begin{matrix} \Delta x \\ \Delta y \end{matrix}\right) 
 \end{equation}
 
-tbd. picture of bike scenario + mit distancen
+
+The considered distances and positions are illustrated  in Figure \ref{fig:distances_carla} exemplary in the cyclist crossing scenario.
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=\linewidth]{figures/carla_distances.png}
+	\caption{Example of used distances and positions for transferring a critical cyclist crossing scenario to another intersection. }
+	\label{fig:distances_carla}
+\end{figure}
 
 Not all positions calculated will work on different maps. Therefore we include two sanity checks when calculating new actor positions. 
 
@@ -188,15 +195,12 @@ CARLA provides a list of possible spawn points across a specific map, but if we 
 Most importantly, the behavior of the car, which characterizes the critical scenario needs to well defined.
 But apart from that, we also want vehicles in the background, that drive around somewhat automated.
 
-\subsection{Limitations}
-Kein Einfluss auf Autopilot route, nicht deterministisch. Pro intersection gibt es Wahrscheinlichkeiten die zum Moment nicht beeinflussbar sind. Eigentliche Route kann vom Agent geplant werden.
+\subsection{Limitations of scenario generation}
+During our research, we found some limitations of the proposed approach for generating new scenarios. First, we experienced no determinism in the driving behavior and routing of the CARLA autopilot. Each map provided by CARLA has certain probabilities assigned for each situation the driver agent has multiple routing options. Therefore it is not granted that the autopilot will take the right route the scenarios provides. Using the cyclist crossing scenario as example, the autopilot should make a right turn to trigger the scenario and therefore run into a dangerous driving scene. But with the probabilities assigned, it could be the case that the autopilot turns left for a single run such that the scenario is not triggered or the driver is not confronted with the dangerous scene. Nevertheless, an agent could be used which is capable of following a specific route given by the scenario file.
 
-+ problems faced:
-\begin{itemize}
-	\item Keine semantische informationen  bei scenarios
-	\item nur 5 basis scenarien, um komplett neue situationen zu definieren, müssten neue basis scenarien generiert werden.
-	\item ...
-\end{itemize}
+Second, at this time it is not possible to gather semantic information namely concerning actor and driving behavior. In detail, the behavior of the base scenarios will be adapted without any changes.  
+
+The last limitation of our approach is the dependency to previous defined OPENScenario basic scenarios. Since we use a predefined critical driving situation as template, we are limited to currently six available scenarios. However, we think of OPENScenario as a future-proof standard including a growing amount of available scenarios which can be used to create a variety of diverse scenarios.
 
 \subsection{Imitation Learning Approach}
 tbd,.
@@ -219,6 +223,13 @@ critical scenarios?
 
 • Does robustness against a certain type of critical scenario
 transfer to a different type of critical scenario?
+
++ future outlook
+
+\begin{itemize}
+	\item erweiterung des generators bzgl. neue actors spawnen die einfach rumlaufen/fahren
+	\item behvior ändern
+\end{itemize}
 
 \printbibliography
 
