@@ -276,10 +276,11 @@ class HUD(object):
         if not os.path.exists('_out/'):
             os.mkdir('_out/')
 
-        if episode = 1:
+
+        if self._episode == "0":
             with open(os.path.join('_out/dataset_metadata.json'), 'w') as fo:
                 jsonObj = {}
-                jsonObj.update(settings_module.sensors_yaw)
+                # jsonObj.update(settings_module.sensors_yaw)
                 jsonObj.update({'fov': 100})
                 jsonObj.update({'width': width})
                 jsonObj.update({'height': height})
@@ -292,13 +293,13 @@ class HUD(object):
 
 
 
-        self._dir = os.path.join('_out/', self._episode.zfill(5) ,'/')
-        if not os.path.exists(dir):
-            os.mkdir(dir)
+        self._dir = os.path.join('_out/', 'episode' + self._episode.zfill(5))
+        if not os.path.exists(self._dir):
+            os.mkdir(self._dir)
      
-        with open(os.path.join('_out/', self._episode.zfill(5) ,'/episode_metadata.json'), 'w') as fo:
+        with open(os.path.join('_out/episode' + self._episode.zfill(5) ,'episode_metadata.json'), 'w+') as fo:
             jsonObj = {}
-            jsonObj.update(settings_module.sensors_yaw)
+            #jsonObj.update(settings_module.sensors_yaw)
             jsonObj.update({'fov': 100})
             jsonObj.update({'width': width})
             jsonObj.update({'height': height})
@@ -313,7 +314,7 @@ class HUD(object):
 
     def on_world_tick(self, timestamp):
         self._server_clock.tick()
-        self.server_fps = self._serve_clock.get_fps()
+        self.server_fps = self._server_clock.get_fps()
         self.frame_number = timestamp.frame
         self.simulation_time = timestamp.elapsed_seconds
 
@@ -339,7 +340,7 @@ class HUD(object):
             fo.write(json.dumps(jsonObj, sort_keys=True, indent=4))
 
         image = camera_manager.image
-        image.save_to_disk('_out/episode00001/' + frame)
+        image.save_to_disk('_out/episode' + self._episode.zfill(5) + '/CenterRGB_' + frame)
 
         if not self._show_info:
             return
@@ -741,8 +742,8 @@ def main():
     argparser.add_argument(
         '--res',
         metavar='WIDTHxHEIGHT',
-        default='1280x720',
-        help='window resolution (default: 1280x720)')
+        default='300x200',
+        help='window resolution (default: 300x200)')
     args = argparser.parse_args()
 
     args.width, args.height = [int(x) for x in args.res.split('x')]
