@@ -55,6 +55,7 @@ import weakref
 
 import os
 import json
+import time
 
 try:
     import pygame
@@ -291,8 +292,6 @@ class HUD(object):
                 jsonObj.update({'set_of_weathers': 0})
                 fo.write(json.dumps(jsonObj, sort_keys=True, indent=4))
 
-
-
         self._dir = os.path.join('_out/', 'episode' + self._episode.zfill(5))
         if not os.path.exists(self._dir):
             os.mkdir(self._dir)
@@ -311,7 +310,6 @@ class HUD(object):
             fo.write(json.dumps(jsonObj, sort_keys=True, indent=4))
 
 
-
     def on_world_tick(self, timestamp):
         self._server_clock.tick()
         self.server_fps = self._server_clock.get_fps()
@@ -321,26 +319,31 @@ class HUD(object):
     def tick(self, world, mapname, clock, camera_manager):   
         control = world.vehicle.get_control()
 
-        # clock.get_fps()
+        fps = clock.get_fps()
+        frame = self.frame_number
+        output_fps = 5
 
-        self._current_frame += 1
-        frame = str(self._current_frame).zfill(5)
+        if fps > 0 and frame % int(fps / output_fps) == 0:
+            # don't use each frame, but rather roughly 5 fps
 
-        with open(os.path.join(self._dir, 'measurements_' + frame + '.json'), 'w') as fo:
-            jsonObj = {}
-            jsonObj.update({'steer': control.steer})
-            jsonObj.update({'throttle': control.throttle})
-            jsonObj.update({'brake': control.brake})
-            jsonObj.update({'hand_brake': control.hand_brake})
-            jsonObj.update({'reverse': control.reverse})
-            jsonObj.update({'steer_noise': 0})
-            jsonObj.update({'throttle_noise': 0})
-            jsonObj.update({'brake_noise': 0})
+            frame = str(self._current_frame).zfill(5)
+            self._current_frame += 1
 
-            fo.write(json.dumps(jsonObj, sort_keys=True, indent=4))
+            with open(os.path.join(self._dir, 'measurements_' + frame + '.json'), 'w') as fo:
+                jsonObj = {}
+                jsonObj.update({'steer': control.steer})
+                jsonObj.update({'throttle': control.throttle})
+                jsonObj.update({'brake': control.brake})
+                jsonObj.update({'hand_brake': control.hand_brake})
+                jsonObj.update({'reverse': control.reverse})
+                jsonObj.update({'steer_noise': 0})
+                jsonObj.update({'throttle_noise': 0})
+                jsonObj.update({'brake_noise': 0})
 
-        image = camera_manager.image
-        image.save_to_disk('_out/episode' + self._episode.zfill(5) + '/CenterRGB_' + frame)
+                fo.write(json.dumps(jsonObj, sort_keys=True, indent=4))
+
+            image = camera_manager.image
+            image.save_to_disk('_out/episode' + self._episode.zfill(5) + '/CenterRGB_' + frame)
 
         if not self._show_info:
             return
