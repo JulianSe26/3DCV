@@ -56,6 +56,7 @@ import weakref
 import os
 import json
 import time
+import math
 
 try:
     import pygame
@@ -323,7 +324,7 @@ class HUD(object):
         frame = self.frame_number
         output_fps = 5
 
-        if fps > 0 and frame % int(fps / output_fps) == 0:
+        if fps > 0 and frame % math.ceil(fps / output_fps) == 0:
             # don't use each frame, but rather roughly 5 fps
 
             frame = str(self._current_frame).zfill(5)
@@ -580,7 +581,7 @@ class CameraManager(object):
         self._camera_transforms = [
             carla.Transform(carla.Location(x=1.6, z=1.7)),
             carla.Transform(carla.Location(x=-5.5, z=2.8), carla.Rotation(pitch=-15))]
-        self._transform_index = 1
+        self._transform_index = 0
         self._sensors = [
             ['sensor.camera.rgb', cc.Raw, 'Camera RGB'],
             ['sensor.camera.depth', cc.Raw, 'Camera Depth (Raw)'],
