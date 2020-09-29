@@ -15,9 +15,9 @@ from hashlib import md5
 from manipulator import ConfigManipulator
 from values import GeneratorValues, ValTypes
 import math
-
-# group
-ENTITY_KEY = "EntityObject"
+import tqdm
+import sys
+import numpy as np
 
 # complex types
 schema_complex_types_values = [
@@ -34,7 +34,7 @@ schema_restriction_values = [
     "MiscObjectCategory",
     "ObjectType",
     "PrecipitationType",
-   # "VehicleCategory",
+   # "VehicleCategory",  -> need some more attention
     "Rule",
     "PedestrianCategory",
     "RouteStrategy"
@@ -53,7 +53,20 @@ changeable_attributes = [
     'MiscObject'
 ]
 
-TOWN_TAG = 'LogicFile' # for finding out which town
+TownList = [
+    'Town01',
+    'Town02',
+    'Town03',
+    'Town04',
+    'Town05',
+    'Town06',
+    'Town07',
+    'Town08',
+    'Town09',
+    'Town10'
+]
+
+TOWN_TAG = 'LogicFile' # for finding out which town is used
 
 class ScenarioGenerator:
 
@@ -62,9 +75,7 @@ class ScenarioGenerator:
         self.number_scenarios = int(number_scenarios)
         self.schema_file_path = schema_file_path
         self.path_to_basic_scenarios = path_to_basic_scenarios
-
         self.manipulator = None
-
         self.values = _nested_dict()
 
     def run(self) -> None:
@@ -79,12 +90,10 @@ class ScenarioGenerator:
         scenarioFiles = []
         for openScenarioFilename in scenarioFilenames:
             # read basic scenario and generate new Scenarios
-            #if openScenarioFilename == 'CyclistCrossing.xosc':
             self.generateXmlScenariosFromBasic(openScenarioFilename)
 
 
     def fetch_data_from_carla(self, scenario_town: str) -> None:
-        # TODO enrich categorial values for pedestrian group and vehicle.car types from CARLA server
         self.manipulator = ConfigManipulator(world_name=scenario_town)
 
         #The keys here match the keys in `changeable_attributes`
@@ -92,13 +101,11 @@ class ScenarioGenerator:
         self.values['Vehicle']['name'] = GeneratorValues(ValTypes.CATEGORICAL, self.manipulator.get_vehicle_actors(), None) 
         self.values['Pedestrian']['name'] = GeneratorValues(ValTypes.CATEGORICAL, self.manipulator.get_actors('walker.'), None)
 
-        #print(self.values)
         pass
 
     def inspect_schema(self) -> None:
+        ''' Function for inspecting schema file of openSCENARIO Standard and build attribute tree '''
 
-        #print([val for val in self.xmlSchema.types['Weather'].iter_components()])
-        #print(self.xmlSchema.types['Weather'].children)
         # all restrictions for possible values
         self.restriction_values = {}
         for value in schema_restriction_values:
@@ -128,34 +135,51 @@ class ScenarioGenerator:
         return xmlschema.XMLSchema(self.schema_file_path)
 
     def prettify(self,elem:ET.ElementTree) -> str:
+        ''' Prettify XMl string for saving it as file '''
         rough_string = ElementTree.tostring(elem.getroot(), 'utf-8')
         reparsed = minidom.parseString(rough_string)
         return reparsed.toprettyxml(indent="  ")
 
     def _check_duplication(self,new_scenario:ElementTree) -> bool:
-        xml_hash = new_scenario.__hash__()
-
-        for generatedFileHash in self.generated_scenarios_hashs:
-            if xml_hash == generatedFileHash:
+        ''' Helper function for detecting duplication in generated files using its hash '''
+      
+        if self._getStringHashOfFile(new_scenario) in self.generated_scenarios_hashs:
                  print("Duplication of generated file detected..")
                  return True
+        else:
+                return False
 
-        return False
+    def _getStringHashOfFile(self, scenario_tree:ElementTree):
+        '''
+         Helper function for getting a hash value of string based content. 
+         Assumption: There is no disordering of attributes during the generation process
+        '''
+        xml_hash_string = ElementTree.tostring(scenario_tree.getroot(),'utf-8')
+        return b''.join(xml_hash_string.split()).__hash__
 
     def random_date(self,start) -> datetime.datetime:
+        ''' Helper function for generating a new date in range 00:00 AM and 23:59 PM '''
         return start + datetime.timedelta(minutes=random.randrange(1440))
 
     def generateXmlScenariosFromBasic(self, openScenarioFilename: str):
+        ''' Generate Scenario by using basic scenario as template '''
 
         basic_scenario = ET.parse(self.path_to_basic_scenarios + openScenarioFilename)
         assert self.xmlSchema.is_valid(basic_scenario)
 
-        new_scenario = basic_scenario
-        root = new_scenario.getroot()
-
+        root_original = basic_scenario.getroot()
+        
         # enrich possible values for pedestrian and car types from carla
-        scenario_town = root.find(f'.//{TOWN_TAG}').items()[0][1]
+        scenario_town = root_original.find(f'.//{TOWN_TAG}').items()[0][1]
         self.fetch_data_from_carla(scenario_town)
+
+        # generate random based pre selection of town for every new scenario to optimize workload
+        scenario_towns = [TownList[random.randint(0, len(TownList)-1)] for n in range(self.number_scenarios)]
+        scenario_towns.sort()
+
+        # TODO: Braucht man dat ?
+        for distinct_town in np.unique(scenario_towns):
+            pass
 
         # Change values -> save for the purpose of checking duplications
         self.generated_scenarios_hashs = []
@@ -163,13 +187,18 @@ class ScenarioGenerator:
         lowercased_restriction_values  = {k.lower(): v for k, v in self.restriction_values.items()}
         lowercased_complex_type_values = {k.lower(): v for k, v in self.complex_types.items()}
 
-        for i in range(self.number_scenarios):
+        for i in tqdm.tqdm(range(self.number_scenarios), desc=f"Generating new Scenarios for base scenario {openScenarioFilename}", file=sys.stdout):
 
+            #TODO: load selected town for new scenario
+            #print(scenario_towns[i])
+            
+            new_scenario = basic_scenario
+            root = new_scenario.getroot()
             date_time = datetime.datetime.now(pytz.timezone('Europe/Paris')).isoformat()
 
             # adapt fileheader changes
             root.find('FileHeader').set('author','CARLA:3DCV-Generator')
-            root.find('FileHeader').set('date',date_time)
+            root.find('FileHeader').set('date', date_time)
 
             for tag in self.values.keys():
                 nodes = root.findall(f'.//{tag}')
@@ -185,26 +214,20 @@ class ScenarioGenerator:
                         items = node.items()
                 
                         for (item_tag, gen_vals) in self.values[tag].items():
-
                             item = [a for a in items if a[0] == item_tag][0]
-
                             if gen_vals.type == ValTypes.DOUBLE:
                                 if float(item[1]) != 0.0:
                                     new_value = float(item[1]) + float(item[1]) *random.uniform(-1,1)
                                 else:
                                     new_value = float(random.uniform(0,10))
-
                             elif gen_vals.type == ValTypes.CATEGORICAL and len(gen_vals.val) > 0:
-                                new_value = random.choice(gen_vals.val)
-                            
+                                new_value = random.choice(gen_vals.val)  
                             else:
-                                #TODO
                                 continue
-                            
-                            print('Setting {} to new value {}'.format(item[0], str(new_value)))
                             node.set(item[0], str(new_value))
+                else:
+                      continue
 
-            print(openScenarioFilename)
             if openScenarioFilename == 'CyclistCrossing.xosc':
                 new_car_spawn, new_bike_spawn = self.manipulator.cyclist_scenario(self.get_pos_for_role(root, 'hero'), self.get_pos_for_role(root, 'adversary'))
                 for actor in root.find('Storyboard').find('Init').find('Actions').findall('Private'):
@@ -217,20 +240,23 @@ class ScenarioGenerator:
                     pos.set('y', str(spawn[1]))
                     pos.set('h', str(spawn[2]))
 
+            #Debug purpose:
+            else:
+                continue
+
             #validate xosc again with schema
             assert self.xmlSchema.is_valid(new_scenario)
 
-
             #checking duplication
-            # if self._check_duplication(new_scenario):
-            #     continue
-            # else:
-        
-            prettyfied_scenario = self.prettify(new_scenario)
-            self.generated_scenarios_hashs.append(new_scenario.__hash__())
-            self.saveFile(prettyfied_scenario, f"{os.path.splitext(openScenarioFilename)[0]}_{i}")
+            if self._check_duplication(new_scenario):
+                 continue
+            else:
+                prettyfied_scenario = self.prettify(new_scenario)
+                self.generated_scenarios_hashs.append(self._getStringHashOfFile(new_scenario))
+                self.saveFile(prettyfied_scenario, f"{os.path.splitext(openScenarioFilename)[0]}_{i}")
 
     def get_pos_for_role(self, scenario_root, role:str) -> tuple:
+        ''' Helper function for finding spawn positions for included actors '''
         actor = [a for a in scenario_root.find('Storyboard').find('Init').find('Actions').findall('Private') if a.get('entityRef') == role][0]
         pos = actor.find('PrivateAction').find('TeleportAction').find('Position').find('WorldPosition')
         return {'x': float(pos.get('x')), 'y': float(pos.get('y')), 'z': float(pos.get('z')), 'yaw': math.degrees(float(pos.get('h')))}

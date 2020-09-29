@@ -96,9 +96,6 @@ class ConfigManipulator:
             if wpv.next(i)[0].is_junction:
                 closest_junction = wpv.next(i)[0]
                 break
-        print(wpv)
-        print(wpb)
-        print(closest_junction)
 
         bike_spawn_wp = []
         new_car_spawn_wp_good = False
@@ -119,7 +116,7 @@ class ConfigManipulator:
             # Get a waypoint that is the same distance away from the base junction as in the base scenario
             # Check if the relation of the hero's and adversary's heading matches at the new wp
             #bike_spawn_wp = [(a.transform.location.x, a.transform.location.y, a.transform.location.z, a.transform.rotation.yaw) for a in new_junction.next(closest_junction.transform.location.distance(wpb.transform.location)) if abs((a.transform.rotation.yaw - new_car_spawn[2]) - (wpb.transform.rotation.yaw - wpv.transform.rotation.yaw)) < 50]
-            bike_spawn_wp = [(a.transform.location.x, a.transform.location.y, a.transform.location.z, a.transform.rotation.yaw) for a in new_junction.next(23) if abs((a.transform.rotation.yaw - new_car_spawn[2]) - (wpb.transform.rotation.yaw - wpv.transform.rotation.yaw)) < 50]
+            bike_spawn_wp = [(a.transform.location.x, a.transform.location.y, a.transform.location.z, a.transform.rotation.yaw) for a in new_junction.next(wpv.transform.location.x - closest_junction.transform.location.x) if abs((a.transform.rotation.yaw - new_car_spawn[2]) - (wpb.transform.rotation.yaw - wpv.transform.rotation.yaw)) < 50]
             
             i+=1
 
