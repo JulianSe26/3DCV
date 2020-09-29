@@ -216,7 +216,19 @@ class ScenarioGenerator:
                     pos.set('x', str(spawn[0]))
                     pos.set('y', str(spawn[1]))
                     pos.set('h', str(spawn[2]))
-
+            elif openScenarioFilename == 'LaneChangeSimple.xosc':
+                new_hero_spawn, new_adv_spawn, new_standing_spawn = self.manipulator.lc_scenario(self.get_pos_for_role(root, 'hero'), self.get_pos_for_role(root, 'adversary'), self.get_pos_for_role(root, 'standing'))
+                for actor in root.find('Storyboard').find('Init').find('Actions').findall('Private'):
+                    pos = actor.find('PrivateAction').find('TeleportAction').find('Position').find('WorldPosition')
+                    if actor.get('entityRef') == 'hero':
+                        spawn = new_hero_spawn
+                    elif actor.get('entityRef') == 'adversary':
+                        spawn = new_adv_spawn
+                    elif actor.get('entityRef') == 'standing':
+                        spawn = new_standing_spawn
+                    pos.set('x', str(spawn[0]))
+                    pos.set('y', str(spawn[1]))
+                    pos.set('h', str(spawn[2]))
             #validate xosc again with schema
             assert self.xmlSchema.is_valid(new_scenario)
 
