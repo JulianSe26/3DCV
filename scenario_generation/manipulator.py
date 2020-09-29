@@ -14,7 +14,7 @@ class ConfigManipulator:
 
     def load_world(self, world_name: str):
 
-        print(not hasattr(self, 'map') or not self.map.name == world_name)
+        #print(not hasattr(self, 'map') or not self.map.name == world_name)
         if not hasattr(self, 'map') or not self.map.name == world_name:
             self.client.load_world(world_name)
             self.map = self.client.get_world().get_map()
@@ -133,6 +133,8 @@ class ConfigManipulator:
         new_car_spawn_wp_good = False
         i = 0
 
+        delta_x = wpv.transform.location.x - closest_junction.transform.location.x
+
         # Not all positions calculated actually work. Therefore we include two sanity checks 
         while len(bike_spawn_wp) == 0 or not new_car_spawn_wp_good:
 
@@ -147,9 +149,8 @@ class ConfigManipulator:
             # Calculate the new spawn point of the bike
             # Get a waypoint that is the same distance away from the base junction as in the base scenario
             # Check if the relation of the hero's and adversary's heading matches at the new wp
-            #bike_spawn_wp = [(a.transform.location.x, a.transform.location.y, a.transform.location.z, a.transform.rotation.yaw) for a in new_junction.next(closest_junction.transform.location.distance(wpb.transform.location)) if abs((a.transform.rotation.yaw - new_car_spawn[2]) - (wpb.transform.rotation.yaw - wpv.transform.rotation.yaw)) < 50]
-            bike_spawn_wp = [(a.transform.location.x, a.transform.location.y, a.transform.location.z, a.transform.rotation.yaw) for a in new_junction.next(wpv.transform.location.x - closest_junction.transform.location.x) if abs((a.transform.rotation.yaw - new_car_spawn[2]) - (wpb.transform.rotation.yaw - wpv.transform.rotation.yaw)) < 50]
-            
+            #bike_spawn_wp = [(a.transform.location.x, a.transform.location.y, a.transform.location.z, a.transform.rotation.yaw) for a in new_junction.next(closest_junction.transform.location.distance(wpb.transform.location)) if abs((a.transform.rotation.yaw - new_car_spawn[2]) - (wpb.transform.rotation.yaw - wpv.transform.rotation.yaw)) < 50
+            bike_spawn_wp = [(a.transform.location.x, a.transform.location.y, a.transform.location.z, a.transform.rotation.yaw) for a in new_junction.next(delta_x) if abs((a.transform.rotation.yaw - new_car_spawn[2]) - (wpb.transform.rotation.yaw - wpv.transform.rotation.yaw)) < 50]
             i+=1
 
 
@@ -157,7 +158,7 @@ class ConfigManipulator:
         # that we will later reapply 
         bike_offset = (ptb.location.x - wpb.transform.location.x, ptb.location.y - wpb.transform.location.y, math.radians(wpb.transform.rotation.yaw - bike_spawn_wp[0][3]))
 
-        print('required {} iterations to find new spawn'.format(i))
+        #print('required {} iterations to find new spawn'.format(i))
         new_offset = self.rotate2d(*bike_offset)
         new_bike_spawn = (bike_spawn_wp[0][0] + new_offset[0], bike_spawn_wp[0][1] + new_offset[1], math.radians(new_car_spawn[2]))
         new_car_spawn = list(new_car_spawn)

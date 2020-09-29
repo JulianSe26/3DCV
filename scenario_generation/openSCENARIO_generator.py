@@ -17,7 +17,7 @@ from values import GeneratorValues, ValTypes
 import math
 import tqdm
 import sys
-import numpy as np
+import copy
 
 # complex types
 schema_complex_types_values = [
@@ -158,6 +158,9 @@ class ScenarioGenerator:
         xml_hash_string = ElementTree.tostring(scenario_tree.getroot(),'utf-8')
         return b''.join(xml_hash_string.split()).__hash__
 
+    def _generateRandomRGB(self):
+        return [str(random.randint(0,255)) for i in range(3)]
+
     def random_date(self,start) -> datetime.datetime:
         ''' Helper function for generating a new date in range 00:00 AM and 23:59 PM '''
         return start + datetime.timedelta(minutes=random.randrange(1440))
@@ -178,10 +181,6 @@ class ScenarioGenerator:
         scenario_towns = [TownList[random.randint(0, len(TownList)-1)] for n in range(self.number_scenarios)]
         scenario_towns.sort()
 
-        # TODO: Braucht man dat ?
-        for distinct_town in np.unique(scenario_towns):
-            pass
-
         # Change values -> save for the purpose of checking duplications
         self.generated_scenarios_hashs = []
 
@@ -193,7 +192,8 @@ class ScenarioGenerator:
             #TODO: load selected town for new scenario
             #print(scenario_towns[i])
             
-            new_scenario = basic_scenario
+            # get a deep copy of basic scenario to not change it
+            new_scenario = copy.deepcopy(basic_scenario)
             root = new_scenario.getroot()
             date_time = datetime.datetime.now(pytz.timezone('Europe/Paris')).isoformat()
 
@@ -230,7 +230,7 @@ class ScenarioGenerator:
                       continue
 
             if openScenarioFilename == 'CyclistCrossing.xosc':
-                new_car_spawn, new_bike_spawn = self.manipulator.cyclist_scenario(self.get_pos_for_role(root, 'hero'), self.get_pos_for_role(root, 'adversary'))
+                new_car_spawn, new_bike_spawn = self.manipulator.cyclist_scenario(self.get_pos_for_role(root_original, 'hero'), self.get_pos_for_role(root_original, 'adversary'))
                 for actor in root.find('Storyboard').find('Init').find('Actions').findall('Private'):
                     pos = actor.find('PrivateAction').find('TeleportAction').find('Position').find('WorldPosition')
                     if actor.get('entityRef') == 'hero':
@@ -253,6 +253,16 @@ class ScenarioGenerator:
                     pos.set('x', str(spawn[0]))
                     pos.set('y', str(spawn[1]))
                     pos.set('h', str(spawn[2]))
+
+            # change color of vehicle randomly if color attribute is available
+            for scneario_obj in root.find('Entities').findall('ScenarioObject'):
+                try:
+                    for p in scneario_obj.find('Vehicle').find('Properties').findall('Property'):
+                        if p.get("name") == 'color':
+                           p.set("value", ",".join(self._generateRandomRGB()))
+                except:
+                   pass
+
             #validate xosc again with schema
             assert self.xmlSchema.is_valid(new_scenario)
 
@@ -296,3 +306,5 @@ if __name__ == "__main__":
 
     # run generator
     generator.run()
+
+    print("Successfully finished")
