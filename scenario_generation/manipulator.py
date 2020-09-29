@@ -8,7 +8,11 @@ import numpy as np
 class ConfigManipulator:
     def __init__(self, world_name: str = "Town01", host: str = "localhost", port: int = 2000):
         self.client = carla.Client(host, port)
-        self.client.load_world(world_name)
+        # self.client.load_world(world_name)
+        try: 
+            self.client.load_world(world_name)
+        except:
+            pass
         self.world = self.client.get_world()
 
 

@@ -59,7 +59,7 @@ class ScenarioGenerator:
 
     def __init__(self, save_dir:str, schema_file_path:str, path_to_basic_scenarios:str, number_scenarios:int):
         self.save_dir = save_dir
-        self.number_scenarios = number_scenarios
+        self.number_scenarios = int(number_scenarios)
         self.schema_file_path = schema_file_path
         self.path_to_basic_scenarios = path_to_basic_scenarios
 
@@ -79,8 +79,8 @@ class ScenarioGenerator:
         scenarioFiles = []
         for openScenarioFilename in scenarioFilenames:
             # read basic scenario and generate new Scenarios
-            if openScenarioFilename == 'CyclistCrossing.xosc':
-                self.generateXmlScenariosFromBasic(openScenarioFilename)
+            #if openScenarioFilename == 'CyclistCrossing.xosc':
+            self.generateXmlScenariosFromBasic(openScenarioFilename)
 
 
     def fetch_data_from_carla(self, scenario_town: str) -> None:
@@ -222,12 +222,13 @@ class ScenarioGenerator:
 
 
             #checking duplication
-            if self._check_duplication(new_scenario):
-                continue
-            else:
-                prettyfied_scenario = self.prettify(new_scenario)
-                self.generated_scenarios_hashs.append(new_scenario.__hash__())
-                self.saveFile(prettyfied_scenario, f"{os.path.splitext(openScenarioFilename)[0]}_{i}")
+            # if self._check_duplication(new_scenario):
+            #     continue
+            # else:
+        
+            prettyfied_scenario = self.prettify(new_scenario)
+            self.generated_scenarios_hashs.append(new_scenario.__hash__())
+            self.saveFile(prettyfied_scenario, f"{os.path.splitext(openScenarioFilename)[0]}_{i}")
 
     def get_pos_for_role(self, scenario_root, role:str) -> tuple:
         actor = [a for a in scenario_root.find('Storyboard').find('Init').find('Actions').findall('Private') if a.get('entityRef') == role][0]
