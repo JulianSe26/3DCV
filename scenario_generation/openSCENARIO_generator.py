@@ -77,6 +77,7 @@ class ScenarioGenerator:
         self.path_to_basic_scenarios = path_to_basic_scenarios
         self.manipulator = None
         self.values = _nested_dict()
+        self.manipulator = ConfigManipulator()
 
     def run(self) -> None:
 
@@ -94,7 +95,7 @@ class ScenarioGenerator:
 
 
     def fetch_data_from_carla(self, scenario_town: str) -> None:
-        self.manipulator = ConfigManipulator(world_name=scenario_town)
+        self.manipulator.load_world(scenario_town)
 
         #The keys here match the keys in `changeable_attributes`
         #The mapping has to be done by hand though

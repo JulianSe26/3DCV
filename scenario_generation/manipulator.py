@@ -11,13 +11,14 @@ class ConfigManipulator:
         self.load_world(world_name)
 
         self.world = self.client.get_world()
-        self.map = self.world.get_map()
 
     def load_world(self, world_name: str):
-        try: 
+
+        print(not hasattr(self, 'map') or not self.map.name == world_name)
+        if not hasattr(self, 'map') or not self.map.name == world_name:
             self.client.load_world(world_name)
-        except:
-            pass
+            self.map = self.client.get_world().get_map()
+
 
     def get_pos_in_distance(self, x:int, y:int, z:int, distance:float) -> carla.Waypoint:
         """Get a new `carla.Waypoint` at a set distance from the current location. 
