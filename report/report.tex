@@ -203,10 +203,26 @@ Second, at this time it is not possible to gather semantic information namely co
 The last limitation of our approach is the dependency to previous defined OPENScenario basic scenarios. Since we use a predefined critical driving situation as template, we are limited to currently six available scenarios. However, we think of OPENScenario as a future-proof standard including a growing amount of available scenarios which can be used to create a variety of diverse scenarios.
 
 \subsection{Imitation Learning Approach}
-tbd,.
+To test the generators' ability to generate diverse critical scenarios we can train a model on generated critical scenarios. We can then measure the performance of this model on a test set to see its robustness to new generated scenarios. Using the existing functionality of the ScenarioRunner to play through our generated scenarios, we can gather the 'expert' driving data from the ego vehicle of the generated scenario. Using this data we are then able to train the vision agent using the Coiltraines training capabilities.
+
+The expert agent, which should be able to solve the critical scenario in the optimal way, uses information gleamed from the Carla Client. This includes precise weather readings, proximity measurements to other NPC actors and information pertaining to the current traffic situation as well as details of other NPC actors' intentions and actions. This allows the expert to solve the scenario safely. The model to be trained however cannot be privy to any of this privileged information. Therefore the expert gathers data using an RGBA camera sensor, mounted to the front of the ego car selected by the scenario generator. Though multiple sensors such as side cameras or LIDAR were also possible but to reduce the size of the collected data as well as the time required for training we opted into a single camera sensor. The only other data that was collected and provided to the model as part of its state vector was the steering, brake and throttle values.
+
+The issue of the frequency of measurement is again a question of data volume and training time vs precision of the model as the frequency of data collection (dependent on resolution) could vary between 0-60fps depending on the hardware used. we opted for 3 collections per second with intent to vary this based on the effectiveness of the model trained on such sparse readings.
+
+
+
 
 \section{Experiments}
-tbd. 
+\subsection{Imitation Learning Execution and Issues}
+Though we set out to preform the learning as outlined in the approach however ran into some issues that prevented execution. A lack of GPU hardware made the gathering of expert data an overwhelming task for our available resources, even at the low resolution of 200x300 we had seen in testing allowed for reasonable fps. This prevented any parallel data collection through a docker application or similar which caused gathering 500MB of training data to take a minimum of 5 hours with 50 hours of driving time in the Coiltraine test sets equating (allbeit at a higher resolution) to roughly 50hours of driving data.
+
+Of course less data can be used, with 10 critical scenarios to be learned however and the span of possible changes in each one, which it is our aim to test, it is unrealistic to assume that 10 driving hours which our resources allowed us to gather would enable the model to achieve a level of competency. This assumption is based on the testing of pre-trained Coiltraine sample models at a much higher resolution with 3 RGBA sensors accompanied by LIDAR data.
+
+\subsection{Training a Pre-trained Coiltraine Model to Augment with Critical Scenario Data}
+Falls es klappt.
+
+\subsection{Evaluation a Pre-trained Coiltraine Model on Critical Scenarios}
+Falls es klappt.
 
 
 
