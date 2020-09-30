@@ -88,6 +88,10 @@ class ScenarioGenerator:
         # read all basic scenarios and begin generation
         scenarioFilenames = [f for f in listdir(self.path_to_basic_scenarios) if isfile(join(self.path_to_basic_scenarios, f))]
 
+        for town in TownList:
+            self.manipulator.load_world(town)
+            self.manipulator.map_query_actors()
+
         scenarioFiles = []
         for openScenarioFilename in scenarioFilenames:
             # read basic scenario and generate new Scenarios
@@ -95,12 +99,10 @@ class ScenarioGenerator:
 
 
     def fetch_data_from_carla(self, scenario_town: str) -> None:
-        self.manipulator.load_world(scenario_town)
-
         #The keys here match the keys in `changeable_attributes`
         #The mapping has to be done by hand though
-        self.values['Vehicle']['name'] = GeneratorValues(ValTypes.CATEGORICAL, self.manipulator.get_vehicle_actors(), None) 
-        self.values['Pedestrian']['name'] = GeneratorValues(ValTypes.CATEGORICAL, self.manipulator.get_actors('walker.'), None)
+        self.values['Vehicle']['name'] = GeneratorValues(ValTypes.CATEGORICAL, self.manipulator.world_vehicle_actors[scenario_town], None) 
+        self.values['Pedestrian']['name'] = GeneratorValues(ValTypes.CATEGORICAL, self.manipulator.world_walker_actors[scenario_town], None)
 
         pass
 
@@ -187,6 +189,9 @@ class ScenarioGenerator:
         lowercased_restriction_values  = {k.lower(): v for k, v in self.restriction_values.items()}
         lowercased_complex_type_values = {k.lower(): v for k, v in self.complex_types.items()}
 
+        if openScenarioFilename == 'LaneChangeSimple.xosc':
+            self.manipulator.lc_analysis(openScenarioFilename, self.get_pos_for_role(root_original, 'hero'), self.get_pos_for_role(root_original, 'adversary'), self.get_pos_for_role(root_original, 'standing'))
+
         for i in tqdm.tqdm(range(self.number_scenarios), desc=f"Generating new Scenarios for base scenario {openScenarioFilename}", file=sys.stdout):
 
             #TODO: load selected town for new scenario
@@ -241,7 +246,7 @@ class ScenarioGenerator:
                     pos.set('y', str(spawn[1]))
                     pos.set('h', str(spawn[2]))
             elif openScenarioFilename == 'LaneChangeSimple.xosc':
-                new_hero_spawn, new_adv_spawn, new_standing_spawn = self.manipulator.lc_scenario(self.get_pos_for_role(root, 'hero'), self.get_pos_for_role(root, 'adversary'), self.get_pos_for_role(root, 'standing'))
+                new_hero_spawn, new_adv_spawn, new_standing_spawn = self.manipulator.lc_scenario()
                 for actor in root.find('Storyboard').find('Init').find('Actions').findall('Private'):
                     pos = actor.find('PrivateAction').find('TeleportAction').find('Position').find('WorldPosition')
                     if actor.get('entityRef') == 'hero':

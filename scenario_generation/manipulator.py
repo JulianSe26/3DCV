@@ -4,6 +4,7 @@ from typing import List
 import itertools
 import math
 import numpy as np
+from collections import defaultdict
 
 class ConfigManipulator:
     def __init__(self, world_name: str = "Town01", host: str = "localhost", port: int = 2000):
@@ -12,12 +13,18 @@ class ConfigManipulator:
 
         self.world = self.client.get_world()
 
-    def load_world(self, world_name: str):
+        self.world_vehicle_actors = defaultdict(list)
+        self.world_walker_actors = defaultdict(list)
+        self.scene_analysis = defaultdict(dict)
 
-        #print(not hasattr(self, 'map') or not self.map.name == world_name)
-        if not hasattr(self, 'map') or not self.map.name == world_name:
-            self.client.load_world(world_name)
-            self.map = self.client.get_world().get_map()
+    def load_world(self, world_name: str):
+        try:
+            #print(not hasattr(self, 'map') or not self.map.name == world_name)
+            if not hasattr(self, 'map') or not self.map.name == world_name:
+                self.client.load_world(world_name)
+                self.map = self.client.get_world().get_map()
+        except RuntimeError:
+            pass
 
 
     def get_pos_in_distance(self, x:int, y:int, z:int, distance:float) -> carla.Waypoint:
@@ -51,20 +58,6 @@ class ConfigManipulator:
         """
         return random.choice(self.get_vehicle_actors())
 
-    def get_random_in_range(low:int=0, high=10):
-        """Get random number where low <= num <= high
-        `high` determines the return type. If it is a `float` return a float. If it is `int` return an int.
-        """
-        if type(high) == 'int':
-            return random.randint(low, high)
-        elif type(high) == 'float':
-            return random.uniform(low, high)
-
-    def get_random_from_list(data:list, num:int=1):
-        """Get `num` entries from a list
-        """
-        return random.choices(data, k=num)
-
     def rotate2d(self, x:float, y:float, radians:float):
         """required helper method to rotate a 2d vector by radians
         """
@@ -73,11 +66,15 @@ class ConfigManipulator:
         m = np.dot(j, [x, y])
         return float(m.T[0]), float(m.T[1])
 
+    def map_query_actors(self, world_name: str = "Town01"):
+        self.load_world(world_name)
+        self.world_vehicle_actors[world_name] = self.get_vehicle_actors()
+        self.world_walker_actors[world_name] = self.get_actors(filter='walker.*')
+
     def get_transform_from_pos(self, pos) -> carla.Waypoint:
         return carla.Transform(carla.Location(x=pos['x'], y=pos['y'], z=pos['z']), carla.Rotation(yaw=pos['yaw']))
 
-
-    def lc_scenario(self, hero_pos=None, adv_pos=None, s_pos=None):
+    def lc_analysis(self, scene_name='LaneChangeSimple.xosc', hero_pos=None, adv_pos=None, s_pos=None):
         if hero_pos is None or adv_pos is None:
             v = [a for a in self.world.get_actors() if 'role_name' in a.attributes.keys() and a.attributes['role_name'] == 'hero'][0].get_transform()
             b = [a for a in self.world.get_actors() if 'role_name' in a.attributes.keys() and a.attributes['role_name'] == 'adversary'][0].get_transform()
@@ -88,6 +85,19 @@ class ConfigManipulator:
             s = self.get_transform_from_pos(s_pos)
 
         wpv = self.map.get_waypoint(v.location)
+
+        self.scene_analysis[scene_name] = {'wpv': wpv, 'v': v, 'b': b, 's':s}
+
+
+    def lc_scenario(self, scene_name='LaneChangeSimple.xosc'):
+
+        if len(self.scene_analysis[scene_name].keys()) < 4:
+            self.lc_analysis()
+
+        v = self.scene_analysis[scene_name]['v']
+        b = self.scene_analysis[scene_name]['b']
+        s = self.scene_analysis[scene_name]['s']
+        wpv = self.scene_analysis[scene_name]['wpv']
 
         eligible_spawns = []
 
