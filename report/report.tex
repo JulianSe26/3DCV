@@ -196,8 +196,21 @@ Not all positions calculated will work on different maps. Therefore we include d
 
 
 Apart from that, we also want vehicles in the background, that drive around somewhat automated.
-Table xy also shows all parameters we declared as changeable for one new scenario. For every run in generating, new values will be set randomly.
+Table \ref{attribute_table} also shows all parameters we declared as changeable for one new scenario. For every run in generating, new values will be set randomly.
 
+\begin{table}
+	\renewcommand{\arraystretch}{1.3}
+	\caption{Changeable Attributes considered in the generator}
+	\label{attribute_table}
+	\centering
+	\begin{tabular}{c|c|c}
+		\hline
+		\bfseries Attribute & \bfseries Description & \bfseries Generation \\
+		\hline\hline
+		Vehicle.Color  & Color of the vehicle & random RGB values. \\
+		\hline
+	\end{tabular}
+\end{table}
 \subsection{Limitations of scenario generation}
 During our research, we found some limitations of the proposed approach for generating new scenarios. First, we experienced no determinism in the driving behavior and routing of the CARLA autopilot. Each map provided by CARLA has certain probabilities assigned for each situation the driver agent has multiple routing options. Therefore it is not granted that the autopilot will take the right route the scenarios provides. Using the cyclist crossing scenario as example, the autopilot should make a right turn to trigger the scenario and therefore run into a dangerous driving scene. But with the probabilities assigned, it could be the case that the autopilot turns left for a single run such that the scenario is not triggered or the driver is not confronted with the dangerous scene. Nevertheless, an agent could be used which is capable of following a specific route given by the scenario file.
 
@@ -211,8 +224,6 @@ To test the generators' ability to generate diverse critical scenarios we can tr
 The expert agent, which should be able to solve the critical scenario in the optimal way, uses information gleamed from the Carla Client. This includes precise weather readings, proximity measurements to other NPC actors and information pertaining to the current traffic situation as well as details of other NPC actors' intentions and actions. This allows the expert to solve the scenario safely. The model to be trained however cannot be privy to any of this privileged information. Therefore the expert gathers data using an RGBA camera sensor, mounted to the front of the ego car selected by the scenario generator. Though multiple sensors such as side cameras or LIDAR were also possible but to reduce the size of the collected data as well as the time required for training we opted into a single camera sensor. The only other data that was collected and provided to the model as part of its state vector was the steering, brake and throttle values.
 
 The issue of the frequency of measurement is again a question of data volume and training time vs precision of the model as the frequency of data collection (dependent on resolution) could vary between 0-60fps depending on the hardware used. we opted for 3 collections per second with intent to vary this based on the effectiveness of the model trained on such sparse readings.
-
-
 
 
 \section{Experiments}
@@ -230,25 +241,14 @@ Falls es klappt.
 
 
 \section{Conclusion}
-To conclude this report, we try to answer three research questions based on the outcome of our experiments.
+In this project paper we have presented a tool for generating new scenarios for the CARLA driving simulator. The focus of the scenarios was in representing critical driving scenarios since they are currently underrepresented in common datasets for autonomous driving challenges.
+The proposed generator uses a predefined set of changeable attributes for defining a new scenario based on already present scenarios. After evaluating the possible methods supported by CARLA and its Scenario-Runner for defining new scenarios, we decided to use an approach utilizing the OpenSCENARIO standard. For this decision we considered generalization, number of adjustable parameters and simplicity. Our approach is able to generate new scenarios by changing static factors such as vehicle types, colors and weather as well as map specific factors such as spawn points or the map itself. The generator is able to create sufficiently different scenarios for every base scenario provided as OpenSCENARIO file. For ensuring the novel scenarios are valid and diverse, the generator includes different sanity checks and a duplication check.
+To conclude the work done for the scenario generator, we are quite satisfied with the results and the system taking into account the issues and limitations we faced during this research.
 
-• Can we generate critical scenarios such that a model trained
-on these scenarios achieves robustness against critical
-scenarios?
+TODO Learning Conclusion
 
-• How many critical scenarios have to be represented in the
-training distribution in order to achieve robustness against
-critical scenarios?
-
-• Does robustness against a certain type of critical scenario
-transfer to a different type of critical scenario?
-
-+ future outlook
-
-\begin{itemize}
-	\item erweiterung des generators bzgl. neue actors spawnen die einfach rumlaufen/fahren
-	\item behvior ändern
-\end{itemize}
+In future research, the generator could be enhanced by supporting also changes in the behavior of actors. This could lead to completely new scenarios. This requires a complete understanding of the abstract process on how actors behave also including the interaction of actors and a definition of a critical scenario such that only critical scenarios will be generated.
+Future work could also consider including additional actors to the scenario by randomly spawning pedestrians or cars. For this, it should be ensured that those actors are only participating passive in the scenario to not interrupt the scenario flow.
 
 \printbibliography
 
