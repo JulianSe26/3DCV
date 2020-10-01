@@ -1,4 +1,4 @@
-\documentclass[conference, 11pt]{IEEEtran}
+\documentclass[conference, a4paper, 11pt]{IEEEtran}
 \IEEEoverridecommandlockouts
 
 \usepackage{amsmath,amssymb,amsfonts}
@@ -30,7 +30,7 @@
 \begin{document}
 
 \title{3DCV - Critical Driving Scenarios\\
-{\small Generate critical driving scenarios in CARLA simulator and apply imitation learning to train a neural network}
+{\small Generate critical driving scenarios in CARLA simulator and evaluate imitation learning possibilities}
 }
 
 \author{
@@ -47,7 +47,7 @@
 
 \begin{abstract}
 	In this project report, we present an approach for generating new scenarios for supporting autonomous driving tasks in critical situations using the CARLA simulator along with it's Scenario-Runner. Our approach consists of generating new XML-based OPENScenario files which can be interpreted by the Scenario-Runner. Based on already present basic Scenarios, we apply a variety  of changes to attributes which are crucial for different sensors of an autonomous car. We considered external factors like weather, road conditions, time of day, color and models of cars, cyclists and pedestrians. In a second step, we transform the scenarios to different places in the same town and to different towns. To ensure the novel generated scenarios are valid, we consider different sanity checks as well as a specific verification to avoid duplicating scenarios.
-	Also, we use the generated scenarios for training a model using imitation learning. TODO..
+	Also, we evaluated the possibilities for generating training data using the CARLA simulator as well as training an autonomous agent via imitation learning.
 
 \end{abstract}
 
@@ -72,8 +72,8 @@ These contain scenarios such as avoiding an obstacle, lane changing with oncomin
     \label{fig:scenario-run_red_light}
 \end{figure}
 
-Furthermore, after generating these different critical driving scenarios we utilize them to learn a robust model.
-To do so imitation learning is used, in which an expert demonstrates the desired behavior in each critical situation and is then adopted by the model.
+Furthermore, after generating these different critical driving scenarios we utilize them to evaluate the possibilities of learning a robust autonomous agent.
+To do so we focus on some prior papers using imitation learning, in which an expert demonstrates the desired behavior in each critical situation and is then adopted by the model.
 
 \section{Related Work}
 
@@ -118,20 +118,20 @@ To train and manage the trainings of imitation learning networks jointly with ev
 In general, we identified the two possible ways to create new scenarios that are supported by the ScenarioRunner.
 The first option consists of using the Python based API of the ScenarioRunner library to define the dynamic behavior of every actor in combination with a \texttt{xml}-based configuration file, which can be used to initialize different parameters for a predefined python based scenario.
 
-The second option is to utilize OpenSCENARIO-based configuration files. OpenScenario is a \texttt{xml}-based file standard for describing dynamic contents in driving simulation applications \cite{OpenScenario}. These configuration files differ from the former approach mainly in one aspect. For defining OpenSCENARIO based scenarios, there is no need to create the python-based scenario description. Therefore OpenSCENARIO can be used to generate all configurations for executing a scenario through the ScenarioRunner library combined at once. 
+The second option is to utilize OpenSCENARIO-based configuration files. OpenScenario is an \texttt{xml}-based file standard for describing dynamic contents in driving simulation applications \cite{OpenScenario}. These configuration files differ from the former approach mainly in one aspect. For defining OpenSCENARIO based scenarios, there is no need to create the python-based scenario description. Therefore OpenSCENARIO can be used to generate all configurations for executing a scenario through the ScenarioRunner library combined at once. 
 
-Both the introduced options come with advantages and disadvantages. For our decision process, we identified different criteria which we would expect fulfilled for the approach we want to work with. 
-The first criteria is \textit{generalization}. We would expect that the approach can be well generalized in terms of  extracting an abstract process which can be applied to all the different formats a new scenarios could possibly have.
+Both introduced options come with advantages and disadvantages. For our decision process, we identified different criteria which we would expect to be fulfilled for the approach we want to work with. 
+The first criteria is \textit{generalization}. We would expect that the approach can be well generalized in terms of  extracting an abstract process which can be applied to all the different formats new scenarios could possibly have.
 The second criteria is \textit{the number of directly accessible and adjustable parameters}. Since we aim to provide a scenario generation process which is capable of generating as many scenarios as possible, we want to achieve a high number of adjustable parameters for providing a large combinatoric basis.
 The third and last criteria we considered is \textit{simplicity} of the overall concept. Reducing the complexity and  following the KISS (Keep it simple, stupid)-Principle for achieving different advantages in further developments such as extensions and maintenance. 
 
-Finally after evaluating both the options for generating new scenarios with respect to the defined criteria, we concluded to use the OpenSCENARIO-based approach. Overall we only see advantages by using the openSCENARIO standard as our final way for generating new scenarios. In comparison to the Python-based scenario generation, openSCENARIO can be better generalized because of its approved standard and fixed schema. Generating Python-based scenario definitions would bring a much larger effort. In addition, the \texttt{xml} configuration needs to be generated as well for every Python-file, where multiple xml configuration could be used with one Python implementation. OpenSCENARIO-based files are including all the necessary data combined in one file. Therefore the selected approach provides an easy file-generation process while maintaining all the information necessary for describing one scenario. Considering the second criteria of direct accessible and adjustable parameters, with OpenSCENARIO-files all possible parameters which are crucial for a scenario are directly accessible and values can be changed easily.
+Finally after evaluating both the options for generating new scenarios with respect to the defined criteria, we decided to use the OpenSCENARIO-based approach. Overall we only see advantages by using the openSCENARIO standard as our final way for generating new scenarios. In comparison to the Python-based scenario generation, openSCENARIO can be better generalized because of its approved standard and fixed schema. Generating Python-based scenario definitions would bring a much larger effort. In addition, the \texttt{xml} configuration needs to be generated as well for every Python-file, where multiple xml configuration could be used with one Python implementation. OpenSCENARIO-based files are including all the necessary data combined in one file. Therefore the selected approach provides an easy file-generation process while maintaining all the information necessary for describing one scenario. Considering the second criteria of direct accessible and adjustable parameters, with OpenSCENARIO-files all possible parameters which are crucial for a scenario are directly accessible and values can be changed easily.
 All the described differences can be transferred to the last and third criteria of following the KISS-principle. It might be that a OpenSCENARIO file alone has a more complex structure, but nevertheless, it would be much more complicated to generate generic Python-files for defining new Scenarios. Since it was declared as a standard, we are much more open for further developments even by using defined critical driving scenarios from different simulators.
 
 \subsection{Design and Implementation}
 With the decision of using OpenSCENARIO-files, we designed a generator tool which is capable of changing a variety of parameters that are decisive for the underlying problem of critical driving scenarios. Our approach utilizes the already present basic scenarios for critical driving situations of the ScenarioRunner. Since it is of tremendous effort to develop an abstract process to generate scenarios which state a completely new critical situation by changing the overall behavior of all actors, we first decided to use the five predefined scenarios, which will be called \textit{basic scenarios} in the further course of this report. Those include situations of a crossing bicycle,  changing weather conditions, following a leading vehicle, pedestrian crossing as well as a lane changing scenario.
 
-We consider a scenario as new, if its sufficiently distinguishable namely when single parameter value differs from all of the already generated scenarios. With this definition we can generate thousands of new scenarios by providing one base scenario. With the number of changeable parameters in combination with all possible values, it is of negligible probability that the exact same scenario will be generated twice.
+We consider a scenario as new, if its sufficiently distinguishable namely when a single parameter value differs from all of the already generated scenarios. With this definition we can generate thousands of new scenarios by providing one base scenario. With the number of changeable parameters in combination with all possible values, it is of negligible probability that the exact same scenario will be generated twice.
 
 To generate new values for selected parameters, we use the schema file for openSCENARIO-files which comes along with the ScenarioRunner tool. We extract mainly attribute names of tags we considered changeable in the context of this project as well as their data-types and valid values if the data-type is categorical.
 
@@ -155,7 +155,7 @@ For the internal representation we use a dictionary based attribute tree structu
 
 CARLA and the ScenarioRunner enable us to adjust quite a few parameters, so that the generator can create a lot of diverse settings. In theory we have access to all possible parameters which are contributing to a single scenario. Since most of them are interventions into the semantics of a scenario, we propose to first change parameters which are not changing the overall actor behavior.
 This includes the type and model of the car, which is steered by the learned agent, but more importantly of each and every other car.
-This is important so that the model generalizes well, even if cars of different size, shape and color are in it's field of vision resulting in different RGB patterns perceived by the cars sensors.
+This is important so that the model generalizes well, even if cars of different size, shape and color are in it's field of view resulting in different RGB patterns perceived by the cars sensors.
 Another parameter, that can be changed is the speed of the cars, which has also an impact on the behavior in critical situations.
 This setting is not limited to cars and is used in a similar manner for bicycle and pedestrian types.
 
@@ -176,7 +176,7 @@ At this time, we did not managed to extract a general process which is valid for
 For this, we first analyze the initial situation by fetching the closest town specific waypoints based on the initial actor position. To get information about the scenario circumstances we use a simple approach to detect whether the scenario takes place on a intersection by calculating and comparing the distances between the actors and the hero (ego-vehicle) actor to the next intersection in driving direction. If the latter distance is less, we conclude that the scenario must take place at an intersection. This information is valuable for shifting the scenario to another  position in the same or different town. We do this with respect to all the conditions given by the initial scenario for instance by retaining the distances between all actors.
 If we conclude that the scenario takes place at an intersection, we fetch all possible junctions using the Python API of CARLA for a specific map. The closest junction in driving direction is used  as the scenario anchor. 
 
-For some scenarios, it is typical that actor positions like for pedestrians or cyclists are not considered as waypoints since they spawn off-road.  If we detect such a deviation, we calculate an offset between the actual actor position and the nearest waypoint. To apply the correct orientation to a new position $p^{new}$, we rotate the initial position of the actor $p = (p_x,p_y,p_z)$ subtracted the nearest waypoint $w = (w_x, w_y, w_z)$ with respect to the new orientation of the road $\Delta yaw = w_{yaw} - p^{new}_{yaw}$  using a rotation matrix with the difference in x direction $p_x - w_x$ and y direction $p_y - w_y$ indicated with $\Delta x$ and $\Delta y$ respectively:
+For some scenarios, it is typical that actor positions like for pedestrians or cyclists are not considered as waypoints since they spawn off-road.  If we detect such a deviation, we calculate an offset between the actual actor position and the nearest waypoint. To apply the correct orientation to a new position $p^{new}$, we rotate the initial position of the actor $p = (p_x,p_y,p_z)$ subtracted by the nearest waypoint $w = (w_x, w_y, w_z)$ with respect to the new orientation of the road $\Delta yaw = w_{yaw} - p^{new}_{yaw}$  using a rotation matrix with the difference in x direction $p_x - w_x$ and y direction $p_y - w_y$ indicated with $\Delta x$ and $\Delta y$ respectively:
 
 \begin{equation}
 	p_{new} = \left(\begin{matrix} cos(\Delta yaw) & sin(\Delta yaw) \\ - sin(\Delta yaw) & cos(\Delta yaw) \end{matrix}\right) *  \left(\begin{matrix} \Delta x \\ \Delta y \end{matrix}\right) 
@@ -219,26 +219,46 @@ Second, at this time it is not possible to gather semantic information namely co
 The last limitation of our approach is the dependency to previous defined OPENScenario basic scenarios. Since we use a predefined critical driving situation as template, we are limited to currently six available scenarios. However, we think of OPENScenario as a future-proof standard including a growing amount of available scenarios which can be used to create a variety of diverse scenarios.
 
 \subsection{Imitation Learning Approach}
-To test the generators' ability to generate diverse critical scenarios we can train a model on generated critical scenarios. We can then measure the performance of this model on a test set to see its robustness to new generated scenarios. Using the existing functionality of the ScenarioRunner to play through our generated scenarios, we can gather the 'expert' driving data from the ego vehicle of the generated scenario. Using this data we are then able to train the vision agent using the Coiltraines training capabilities.
+To test the generators' ability to generate diverse critical scenarios we can train a model on generated critical scenarios. We can then measure the performance of this model on a test set to see its robustness to new generated scenarios. Using the existing functionality of the ScenarioRunner to play through our generated scenarios, we can gather the 'expert' driving data from the ego vehicle of the generated scenario. Using this data we are then able to train the vision agent.
 
-The expert agent, which should be able to solve the critical scenario in the optimal way, uses information gleamed from the Carla Client. This includes precise weather readings, proximity measurements to other NPC actors and information pertaining to the current traffic situation as well as details of other NPC actors' intentions and actions. This allows the expert to solve the scenario safely. The model to be trained however cannot be privy to any of this privileged information. Therefore the expert gathers data using an RGBA camera sensor, mounted to the front of the ego car selected by the scenario generator. Though multiple sensors such as side cameras or LIDAR were also possible but to reduce the size of the collected data as well as the time required for training we opted into a single camera sensor. The only other data that was collected and provided to the model as part of its state vector was the steering, brake and throttle values.
+The expert agent, which should be able to solve the critical scenario in the optimal way, uses information gleamed from the Carla Client. This includes precise weather readings, proximity measurements to other NPC actors and information pertaining the current traffic situation as well as details of other NPC actors' intentions and actions. This allows the expert to solve the scenario safely. The model to be trained however cannot be privy to any of this privileged information. Therefore the expert gathers data using an RGB camera sensor, mounted to the front of the ego car selected by the scenario generator. Though multiple sensors such as side cameras or LIDAR were also possible but to reduce the size of the collected data as well as the time required for training we opted into a single camera sensor. The only other data that was collected and provided to the model as part of its state vector was the steering, brake and throttle values.
 
-The issue of the frequency of measurement is again a question of data volume and training time vs precision of the model as the frequency of data collection (dependent on resolution) could vary between 0-60fps depending on the hardware used. we opted for 3 collections per second with intent to vary this based on the effectiveness of the model trained on such sparse readings.
-
+The issue of the frequency of measurement is again a question of data volume and training time vs precision of the model as the frequency of data collection (dependent on resolution) could vary between 0-60 fps depending on the hardware used. we opted for 5 collections per second with intent to vary this based on the effectiveness of the model trained on such sparse readings.
 
 \section{Experiments}
 \subsection{Imitation Learning Execution and Issues}
-Though we set out to preform the learning as outlined in the approach however ran into some issues that prevented execution. A lack of GPU hardware made the gathering of expert data an overwhelming task for our available resources, even at the low resolution of 200x300 we had seen in testing allowed for reasonable fps. This prevented any parallel data collection through a docker application or similar which caused gathering 500MB of training data to take a minimum of 5 hours with 50 hours of driving time in the Coiltraine test sets equating (allbeit at a higher resolution) to roughly 50hours of driving data.
+Though we set out to perform the learning as outlined in the approach, we however ran into some issues that prevented execution. 
+First of all we started off by having a look at the approach as presented by \citeauthor{Xiao2020ActionBasedRL} in their work \citetitle{Xiao2020ActionBasedRL} \cite{Xiao2020ActionBasedRL, ActionBasedRL:github}. Although it looked promising and seemed straightforward, it turned out not to be executable at all.
 
-Of course less data can be used, with 10 critical scenarios to be learned however and the span of possible changes in each one, which it is our aim to test, it is unrealistic to assume that 10 driving hours which our resources allowed us to gather would enable the model to achieve a level of competency. This assumption is based on the testing of pre-trained Coiltraine sample models at a much higher resolution with 3 RGBA sensors accompanied by LIDAR data.
+So, we moved on and used \citetitle{felipecode:coiltraine} \cite{Toromanoff_2020_CVPR}. Using this framework we are able to train models based on image data and the experts control input. Additionally, this repository provides the functionality of validating a learned model as well as deploying a trained model in form of an agent and visualizing its behavior in the CARLA simulator.
 
-\subsection{Training a Pre-trained Coiltraine Model to Augment with Critical Scenario Data}
-Falls es klappt.
+After solving the problem of training a model, the next step was how to collect the necessary data for training. For this purpose CARLA provides a so-called Data Collector \cite{CARLA:DataCollector}, which works quite fine, but only with CARLA version 0.8.4. This is a major issue as the ScenarioRunner which is used to execute our generated scenarios offers support for CARLA versions 0.9 and higher. Due to this inconvenience we had to find our own way of recording all the necessary data for training a model.
 
-\subsection{Evaluation a Pre-trained Coiltraine Model on Critical Scenarios}
-Falls es klappt.
+We did so by modifying a Python script of the ScenarioRunner, namely \textit{manual\_control.py}. The functionality to record and save each frame of the camera attached to the car was basically already implemented. This only needed to be tweaked as such, that not every frame is saved, but it is limited to 5 fps and synced with the collection of the expert data. The expert data could be extracted by accessing CARLA via the PythonAPI and oriented after how the DataCollector does it. The for us important data (steering, throttle, brake) were collected rather easily, but when feeding this data to the training framework it apparently required more data.
+Although we spent quite a lot of time with the framework and the data collection, we were not able to generate data such that COiLTRAiNE was able to learn a model.
 
+Furthermore, even if we would have been able to provide the correct data, a lack of GPU hardware would have made the gathering of expert data an overwhelming task for our available resources, even at the low resolution of 200x300 we had seen in testing allowed for reasonable fps. This prevented any parallel data collection through a docker application or similar which caused gathering 500 MB of training data to take a minimum of 5 hours with 50 hours of driving time in the COiLTRAiNE training sets equating (albeit at a higher resolution) to roughly 50hours of driving data.
 
+Of course less data can be used, with 5 basic critical scenarios to be learned however and the span of possible changes in each one, which it is our aim to test, it is unrealistic to assume that 10 driving hours which our resources allowed us to gather would enable the model to achieve a level of competency. This assumption is based on the testing of pre-trained COiLTRAiNE sample models at a much higher resolution with 3 RGBA sensors accompanied by LIDAR data.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.7\linewidth]{figures/trained_agent_fail.png}
+    \caption{Behavior of downloaded pre-trained model (in CARLA 0.9.9)}
+    \label{fig:trained_agent_fail}
+\end{figure}
+
+Our last effort to validate the generated critical driving situations, was to observe an already learnt model from the paper \citetitle{Codevilla:OnOfflineEvaluation} \cite{Codevilla:OnOfflineEvaluation} and how it behaves in these scenarios. To do so we used the \textit{view\_model.py} from the COiLTRAiNE framework, which visualizes the model in the CARLA simulator. But although these models supposedly should behave quite well in most driving situations, there appeared to be some fundamental problems, as the agent could not even stay in its lane and on the street (as seen in \autoref{fig:trained_agent_fail}). The cause for the presumably lies in the different CARLA versions. The imitation learning framework was developed with version 0.8.4 in mind, but - in order for the ScenarioRunner to work - we had to use version 0.9 or higher.
+
+\subsection{Imitation Learning takeaways}
+
+Even though our experiments did not come to a positive end or enabled us to validate the generated critical scenarios by training a model, we learned quite a lot and want to share our key takeaways of the process.
+
+First and foremost, the current situation regarding CARLA and its different versions is still subject to constant change. Especially with version 0.9 the whole PythonAPI was changed. Therefore, it is quite dangerous to rely on frameworks developed for previous versions. This underlines that it was a good decision to choose the OpenScenario standard for the generated scenarios, as this will not be in danger to such change.
+Due to the given timeframe a full stack development of a learning framework in addition to the development of the generator for critical driving situations was just not viable.
+
+Furthermore, we found out, that it is possible to use the ScenarioRunner and a modified version of its manual control functionality to collect data. We even created a script to generate a bulk of critical scenarios and execute them via the ScenarioRunner to collect the data.
+Although this consumes quite some time as the data is generated in real time, with enough resources and time at hand, this should not be a problem.
 
 \section{Conclusion}
 In this project paper we have presented a tool for generating new scenarios for the CARLA driving simulator. The focus of the scenarios was in representing critical driving scenarios since they are currently underrepresented in common datasets for autonomous driving challenges.
