@@ -240,6 +240,7 @@ class ScenarioGenerator:
                 else:
                       continue
 
+            # Actually set the new town to the file
             root.find(f'.//{TOWN_TAG}').set('filepath', this_town)
 
             if openScenarioFilename == 'CyclistCrossing.xosc':

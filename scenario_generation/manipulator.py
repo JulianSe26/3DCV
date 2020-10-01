@@ -18,6 +18,7 @@ class ConfigManipulator:
         self.scene_analysis = defaultdict(dict)
 
     def load_world(self, world_name: str):
+        """load the given map but only if it is not yet loaded"""
         try:
             #print(not hasattr(self, 'map') or not self.map.name == world_name)
             if not hasattr(self, 'map') or not self.map.name == world_name:
@@ -47,19 +48,7 @@ class ConfigManipulator:
         """Return all possible actors in the world or filter by regex"""
         return [bp.id for bp in self.client.get_world().get_blueprint_library().filter(filter)]
 
-    def get_random_actor(self, filter:str='*') -> str:
-        """Get the name of a random actor. Filter can be used to only select certain categories.
-        `vehicle` for cars only, `static` for props, `walker` for people
-        Default is `*`
-        """
-        return random.choice(self.get_actors(filter=filter))
-
-    def get_random_vehicle_actor(self, wheels:int=4) -> str:
-        """Returns string for a vehicle with `wheels` many wheels
-        """
-        return random.choice(self.get_vehicle_actors())
-
-    def rotate2d(self, x:float, y:float, radians:float):
+    def rotate2d(self, x:float, y:float, radians:float) -> tuple:
         """required helper method to rotate a 2d vector by radians
         """
         c, s = np.cos(radians), np.sin(radians)
@@ -68,14 +57,17 @@ class ConfigManipulator:
         return float(m.T[0]), float(m.T[1])
 
     def map_query_actors(self, world_name: str = "Town01"):
+        """query all possible actors on the current map and save to self"""
         self.load_world(world_name)
         self.world_vehicle_actors[world_name] = self.get_vehicle_actors()
         self.world_walker_actors[world_name] = self.get_actors(filter='walker.*')
 
-    def get_transform_from_pos(self, pos) -> carla.Waypoint:
+    def get_transform_from_pos(self, pos: dict) -> carla.Transform:
+        """return a Transform from a given dict with keys `x`, `y`, `z` and `yaw`"""
         return carla.Transform(carla.Location(x=pos['x'], y=pos['y'], z=pos['z']), carla.Rotation(yaw=pos['yaw']))
 
     def lc_analysis(self, scene_name='LaneChangeSimple.xosc', hero_pos=None, adv_pos=None, s_pos=None):
+        """pre-analysis for the lane change scenario"""
         if hero_pos is None or adv_pos is None:
             v = [a for a in self.world.get_actors() if 'role_name' in a.attributes.keys() and a.attributes['role_name'] == 'hero'][0].get_transform()
             b = [a for a in self.world.get_actors() if 'role_name' in a.attributes.keys() and a.attributes['role_name'] == 'adversary'][0].get_transform()
@@ -91,7 +83,7 @@ class ConfigManipulator:
 
 
     def lc_scenario(self, scene_name='LaneChangeSimple.xosc'):
-
+        """Actually generate new lane change positions on the new map"""
         if len(self.scene_analysis[scene_name].keys()) < 4:
             self.lc_analysis()
 
@@ -119,6 +111,7 @@ class ConfigManipulator:
         return new_hero_spawn, new_adv_spawn, new_standing_spawn
 
     def cyclist_analysis(self, scene_name='CyclistCrossing.xosc', hero_pos=None, adv_pos=None):
+        """pre-analysis for the cyclist scenario"""
         if hero_pos is None or adv_pos is None:
             # Get location of vehicle v and bike b. Then get their closest waypoints
             v = [a for a in self.world.get_actors() if 'role_name' in a.attributes.keys() and a.attributes['role_name'] == 'hero'][0].get_transform()
@@ -143,7 +136,7 @@ class ConfigManipulator:
         self.scene_analysis[scene_name] = {'wpv': wpv, 'ptb':ptb, 'wpb': wpb, 'closest_junction': closest_junction}
 
     def cyclist_scenario(self, scene_name='CyclistCrossing.xosc'):
-
+        """Actually generate new cyclist scenario positions on the new map"""
         wpv = self.scene_analysis[scene_name]['wpv']
         ptb = self.scene_analysis[scene_name]['ptb']
         wpb = self.scene_analysis[scene_name]['wpb']
@@ -191,24 +184,5 @@ class ConfigManipulator:
         return new_car_spawn, new_bike_spawn
 
 
-if __name__ == "__main__":
-
-    m = ConfigManipulator(world_name="Town10")
-
-    TownList = [
-        'Town01',
-        'Town02',
-        'Town03',
-        'Town04',
-        'Town05',
-        'Town06',
-        'Town07',
-        'Town08',
-        'Town09',
-        'Town10'
-    ]
-
-    for town in TownList:
-        m.load_world(town)
-    
+if __name__ == "__main__":    
     pass
