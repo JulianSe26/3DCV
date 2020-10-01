@@ -58,12 +58,7 @@ TownList = [
     'Town02',
     'Town03',
     'Town04',
-    'Town05',
-    'Town06',
-    'Town07',
-    'Town08',
-    'Town09',
-    'Town10'
+    'Town05'
 ]
 
 TOWN_TAG = 'LogicFile' # for finding out which town is used
@@ -89,8 +84,7 @@ class ScenarioGenerator:
         scenarioFilenames = [f for f in listdir(self.path_to_basic_scenarios) if isfile(join(self.path_to_basic_scenarios, f))]
 
         for town in TownList:
-            self.manipulator.load_world(town)
-            self.manipulator.map_query_actors()
+            self.manipulator.map_query_actors(town)
 
         scenarioFiles = []
         for openScenarioFilename in scenarioFilenames:
@@ -177,7 +171,6 @@ class ScenarioGenerator:
         
         # enrich possible values for pedestrian and car types from carla
         scenario_town = root_original.find(f'.//{TOWN_TAG}').items()[0][1]
-        self.fetch_data_from_carla(scenario_town)
 
         # generate random based pre selection of town for every new scenario to optimize workload
         scenario_towns = [TownList[random.randint(0, len(TownList)-1)] for n in range(self.number_scenarios)]
@@ -189,13 +182,26 @@ class ScenarioGenerator:
         lowercased_restriction_values  = {k.lower(): v for k, v in self.restriction_values.items()}
         lowercased_complex_type_values = {k.lower(): v for k, v in self.complex_types.items()}
 
+        self.manipulator.load_world(scenario_town)
+
         if openScenarioFilename == 'LaneChangeSimple.xosc':
             self.manipulator.lc_analysis(openScenarioFilename, self.get_pos_for_role(root_original, 'hero'), self.get_pos_for_role(root_original, 'adversary'), self.get_pos_for_role(root_original, 'standing'))
+        elif openScenarioFilename == 'CyclistCrossing.xosc':
+            self.manipulator.cyclist_analysis(openScenarioFilename, self.get_pos_for_role(root_original, 'hero'), self.get_pos_for_role(root_original, 'adversary'))
 
         for i in tqdm.tqdm(range(self.number_scenarios), desc=f"Generating new Scenarios for base scenario {openScenarioFilename}", file=sys.stdout):
 
             #TODO: load selected town for new scenario
             #print(scenario_towns[i])
+
+            # HACK: only switch town in supported scenarios
+            if openScenarioFilename == 'LaneChangeSimple.xosc' or openScenarioFilename == 'CyclistCrossing.xosc':
+                this_town = scenario_towns[i]
+            else:
+                this_town = scenario_town
+
+            self.manipulator.load_world(this_town)
+            self.fetch_data_from_carla(this_town)
             
             # get a deep copy of basic scenario to not change it
             new_scenario = copy.deepcopy(basic_scenario)
@@ -234,8 +240,10 @@ class ScenarioGenerator:
                 else:
                       continue
 
+            root.find(f'.//{TOWN_TAG}').set('filepath', this_town)
+
             if openScenarioFilename == 'CyclistCrossing.xosc':
-                new_car_spawn, new_bike_spawn = self.manipulator.cyclist_scenario(self.get_pos_for_role(root_original, 'hero'), self.get_pos_for_role(root_original, 'adversary'))
+                new_car_spawn, new_bike_spawn = self.manipulator.cyclist_scenario()
                 for actor in root.find('Storyboard').find('Init').find('Actions').findall('Private'):
                     pos = actor.find('PrivateAction').find('TeleportAction').find('Position').find('WorldPosition')
                     if actor.get('entityRef') == 'hero':
@@ -245,24 +253,29 @@ class ScenarioGenerator:
                     pos.set('x', str(spawn[0]))
                     pos.set('y', str(spawn[1]))
                     pos.set('h', str(spawn[2]))
+                    pos.set('z', str(float(pos.get('z')) + .5))
             elif openScenarioFilename == 'LaneChangeSimple.xosc':
-                new_hero_spawn, new_adv_spawn, new_standing_spawn = self.manipulator.lc_scenario()
-                for actor in root.find('Storyboard').find('Init').find('Actions').findall('Private'):
-                    pos = actor.find('PrivateAction').find('TeleportAction').find('Position').find('WorldPosition')
-                    if actor.get('entityRef') == 'hero':
-                        spawn = new_hero_spawn
-                    elif actor.get('entityRef') == 'adversary':
-                        spawn = new_adv_spawn
-                    elif actor.get('entityRef') == 'standing':
-                        spawn = new_standing_spawn
-                    pos.set('x', str(spawn[0]))
-                    pos.set('y', str(spawn[1]))
-                    pos.set('h', str(spawn[2]))
+                try:
+                    new_hero_spawn, new_adv_spawn, new_standing_spawn = self.manipulator.lc_scenario()
+                    for actor in root.find('Storyboard').find('Init').find('Actions').findall('Private'):
+                        pos = actor.find('PrivateAction').find('TeleportAction').find('Position').find('WorldPosition')
+                        if actor.get('entityRef') == 'hero':
+                            spawn = new_hero_spawn
+                        elif actor.get('entityRef') == 'adversary':
+                            spawn = new_adv_spawn
+                        elif actor.get('entityRef') == 'standing':
+                            spawn = new_standing_spawn
+                        pos.set('x', str(spawn[0]))
+                        pos.set('y', str(spawn[1]))
+                        pos.set('h', str(spawn[2]))
+                        pos.set('z', str(float(pos.get('z')) + .5))
+                except IndexError:
+                    break
 
             # change color of vehicle randomly if color attribute is available
-            for scneario_obj in root.find('Entities').findall('ScenarioObject'):
+            for scenario_obj in root.find('Entities').findall('ScenarioObject'):
                 try:
-                    for p in scneario_obj.find('Vehicle').find('Properties').findall('Property'):
+                    for p in scenario_obj.find('Vehicle').find('Properties').findall('Property'):
                         if p.get("name") == 'color':
                            p.set("value", ",".join(self._generateRandomRGB()))
                 except:

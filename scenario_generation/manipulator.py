@@ -24,6 +24,7 @@ class ConfigManipulator:
                 self.client.load_world(world_name)
                 self.map = self.client.get_world().get_map()
         except RuntimeError:
+            print('Map {} cannot be loaded'.format(world_name))
             pass
 
 
@@ -117,7 +118,7 @@ class ConfigManipulator:
 
         return new_hero_spawn, new_adv_spawn, new_standing_spawn
 
-    def cyclist_scenario(self, hero_pos=None, adv_pos=None):
+    def cyclist_analysis(self, scene_name='CyclistCrossing.xosc', hero_pos=None, adv_pos=None):
         if hero_pos is None or adv_pos is None:
             # Get location of vehicle v and bike b. Then get their closest waypoints
             v = [a for a in self.world.get_actors() if 'role_name' in a.attributes.keys() and a.attributes['role_name'] == 'hero'][0].get_transform()
@@ -132,12 +133,21 @@ class ConfigManipulator:
 
         # get all junctions described by the map topology and order them according to their distance to the hero
         # The closest junction (when driving forward) is the 'base junction' that is used as the scenario anchor
-        wp = [a for a in list(itertools.chain(*self.world.get_map().get_topology())) if a.is_junction]
+        wp = [a for a in list(itertools.chain(*self.map.get_topology())) if a.is_junction]
         dists = sorted(wpv.transform.location.distance(a.transform.location) for a in wp)
         for i in dists:
             if wpv.next(i)[0].is_junction:
                 closest_junction = wpv.next(i)[0]
                 break
+
+        self.scene_analysis[scene_name] = {'wpv': wpv, 'ptb':ptb, 'wpb': wpb, 'closest_junction': closest_junction}
+
+    def cyclist_scenario(self, scene_name='CyclistCrossing.xosc'):
+
+        wpv = self.scene_analysis[scene_name]['wpv']
+        ptb = self.scene_analysis[scene_name]['ptb']
+        wpb = self.scene_analysis[scene_name]['wpb']
+        closest_junction = self.scene_analysis[scene_name]['closest_junction']
 
         bike_spawn_wp = []
         new_car_spawn_wp_good = False
@@ -145,6 +155,7 @@ class ConfigManipulator:
 
         delta_x = wpv.transform.location.x - closest_junction.transform.location.x
 
+        wp = [a for a in list(itertools.chain(*self.map.get_topology())) if a.is_junction]
         # Not all positions calculated actually work. Therefore we include two sanity checks 
         while len(bike_spawn_wp) == 0 or not new_car_spawn_wp_good:
 
@@ -154,7 +165,7 @@ class ConfigManipulator:
             # Get the hero's new waypoint including heading in relation to the new junction
             # Declare the spawn point as valid if the car's yaw is roughly the same as the junction's yaw
             new_car_spawn = [(a.transform.location.x, a.transform.location.y, a.transform.rotation.yaw) for a in new_junction.previous(wpv.transform.location.distance(closest_junction.transform.location))][0]
-            new_car_spawn_wp_good = abs(new_junction.transform.rotation.yaw - new_car_spawn[2]) < 45
+            new_car_spawn_wp_good = abs(new_junction.transform.rotation.yaw - new_car_spawn[2]) < 45 and new_junction.previous(wpv.transform.location.distance(closest_junction.transform.location))[0].right_lane_marking.type != carla.LaneMarkingType.Broken
 
             # Calculate the new spawn point of the bike
             # Get a waypoint that is the same distance away from the base junction as in the base scenario
@@ -162,6 +173,8 @@ class ConfigManipulator:
             #bike_spawn_wp = [(a.transform.location.x, a.transform.location.y, a.transform.location.z, a.transform.rotation.yaw) for a in new_junction.next(closest_junction.transform.location.distance(wpb.transform.location)) if abs((a.transform.rotation.yaw - new_car_spawn[2]) - (wpb.transform.rotation.yaw - wpv.transform.rotation.yaw)) < 50
             bike_spawn_wp = [(a.transform.location.x, a.transform.location.y, a.transform.location.z, a.transform.rotation.yaw) for a in new_junction.next(delta_x) if abs((a.transform.rotation.yaw - new_car_spawn[2]) - (wpb.transform.rotation.yaw - wpv.transform.rotation.yaw)) < 50]
             i+=1
+            if i>2000:
+                raise RuntimeError('Could not find new spawn')
 
 
         # The bike's position is not considered a waypoint by carla. However it is way easier using waypoints for calculations so we calculate an offset to the bike's closest waypoint
@@ -179,5 +192,23 @@ class ConfigManipulator:
 
 
 if __name__ == "__main__":
+
+    m = ConfigManipulator(world_name="Town10")
+
+    TownList = [
+        'Town01',
+        'Town02',
+        'Town03',
+        'Town04',
+        'Town05',
+        'Town06',
+        'Town07',
+        'Town08',
+        'Town09',
+        'Town10'
+    ]
+
+    for town in TownList:
+        m.load_world(town)
     
     pass
