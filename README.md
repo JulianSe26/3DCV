@@ -1,4 +1,49 @@
-# 3DCV
-3DCV Project Repository
+# 3DCV project on critical driving scenarios
 
-[Link zum Report](report/report.pdf)
+Christopher Klammt  
+Tobias Richstein  
+Julian Seibel  
+Karl Thyssen
+
+
+[Link to the report](report/report.pdf)
+
+
+## Scenario generation
+
+Below are some examples of newly generated scenarios compared to the original scenario.
+
+### Cyclist scenario
+![Original cyclist scenario](report/figures/generated/cyclist_original.PNG)
+
+Above is the original blueprint for the cyclist scenario. It features a hero car and a bike that is about to cross the street forcing the car to brake.
+
+---
+
+![Modified cyclist scenario in same town](report/figures/generated/cyclist_1.PNG)
+This is a modified scenario of the cyclist crossing. The bike has been replaced with a car and the situation occurs at a different intersection but within the same map.
+
+---
+
+![Modified cyclist scenario in different town](report/figures/generated/cyclist_2.PNG)
+
+For this scenario the town has changed but the parameters of the situation remain the same.
+
+
+### Lane Changing Scenario
+
+![Original lane changing scenario](report/figures/generated/lanechange_original.PNG)
+
+This scenario describes the hero car following a car driving in front that abruptly changes its lane to avoid a still standing vehicle.
+
+---
+
+![Modified lane changing scenario in same town](report/figures/generated/lanechange_1.PNG)
+
+This generated scenario takes place in rougher weather and also features the highway going in the other direction than in the original and also using a different lane.
+
+---
+
+![Modified lane changing scenario in a different town](report/figures/generated/lanechange_2.PNG)
+
+Above we can see a generated lane changing scenario taking place in a different town from the original scenario.

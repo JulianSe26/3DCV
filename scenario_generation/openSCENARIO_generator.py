@@ -271,7 +271,7 @@ class ScenarioGenerator:
                         pos.set('h', str(spawn[2]))
                         pos.set('z', str(float(pos.get('z')) + .5))
                 except IndexError:
-                    break
+                    continue
 
             # change color of vehicle randomly if color attribute is available
             for scenario_obj in root.find('Entities').findall('ScenarioObject'):
