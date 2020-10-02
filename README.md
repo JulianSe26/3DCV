@@ -31,36 +31,36 @@ Explanation of the arguments:
 Below are some examples of newly generated scenarios compared to the original scenario.
 
 ### Cyclist scenario
-![Original cyclist scenario](report/figures/generated/cyclist_original.PNG)
+![Original cyclist scenario](report/figures/generated/cyclist_original.jpg)
 
 Above is the original blueprint for the cyclist scenario. It features a hero car and a bike that is about to cross the street forcing the car to brake.
 
 ---
 
-![Modified cyclist scenario in same town](report/figures/generated/cyclist_1.PNG)
+![Modified cyclist scenario in same town](report/figures/generated/cyclist_1.jpg)
 This is a modified scenario of the cyclist crossing. The bike has been replaced with a car and the situation occurs at a different intersection but within the same map.
 
 ---
 
-![Modified cyclist scenario in different town](report/figures/generated/cyclist_2.PNG)
+![Modified cyclist scenario in different town](report/figures/generated/cyclist_2.jpg)
 
 For this scenario the town has changed but the parameters of the situation remain the same.
 
 
 ### Lane Changing Scenario
 
-![Original lane changing scenario](report/figures/generated/lanechange_original.PNG)
+![Original lane changing scenario](report/figures/generated/lanechange_original.jpg)
 
 This scenario describes the hero car following a car driving in front that abruptly changes its lane to avoid a still standing vehicle.
 
 ---
 
-![Modified lane changing scenario in same town](report/figures/generated/lanechange_1.PNG)
+![Modified lane changing scenario in same town](report/figures/generated/lanechange_1.jpg)
 
 This generated scenario takes place in rougher weather and also features the highway going in the other direction than in the original and also using a different lane.
 
 ---
 
-![Modified lane changing scenario in a different town](report/figures/generated/lanechange_2.PNG)
+![Modified lane changing scenario in a different town](report/figures/generated/lanechange_2.jpg)
 
 Above we can see a generated lane changing scenario taking place in a different town from the original scenario.
