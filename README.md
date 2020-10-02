@@ -11,22 +11,25 @@ Karl Thyssen
 
 ## Scenario generation
 
-For starting the scenario generation, make sure to install all requirements using the *environment.yml* i.e. with conda:
+To start the scenario generation, make sure to install all requirements using the *environment.yml* i.e. with conda:
 
 `` conda env create -f environment.yml ``
 
-Afterwards, make sure to place all basic scenarios in the *./scenario_generation/basic_scenarios/* folder as *xosc* OpenSCENARIO configuration files.
+Apart from that the CARLA Python package needs to be installed as described in [the CARLA documentation](https://carla.readthedocs.io/en/latest/start_quickstart/#b-package-installation).
+
+
+(This step is not needed if you only want to use the basic scenarios provided with CARLA v0.9.9) Afterwards, make sure to place all basic scenarios in the *./scenario_generation/basic_scenarios/* folder as *xosc* OpenSCENARIO configuration files.
 
 Start the process by executing the following command from the root folder:
 
 ``python ./scenario_generation/openSCENARIO_generator.py [--log] [--number_scenarios] [--save_path]``
 
 Explanation of the arguments:
-* ``logs`` : Flag, if logging is activated. The generator will save a csv file in *./logs/* per basic scenario including all new values set for newly generated scenarios
-* ``number_scenarios`` : The number of scenarios which should be created out of one basic scenario (*default* is 1)
+* ``logs`` : Flag, whether logging should be activated. The generator will save one csv file per basic scenario in *./logs/* that includes all new values set for newly generated scenarios
+* ``number_scenarios`` : The number of scenarios which should be created from one basic scenario (*default* is 1)
 * ``save_path`` : Folder where to save the generated scenarios (*default* is *./generated_scenarios/*)
 
-**Note** : To start the Scenario-Generator, make sure you have a running CARLA instance. The scripts will use the Python-API of the CARLA Server.
+**Note** : To start the Scenario-Generator, make sure you have a running CARLA v0.9.9 instance. The scripts will use the Python-API of the CARLA Server.
 
 Below are some examples of newly generated scenarios compared to the original scenario.
 
