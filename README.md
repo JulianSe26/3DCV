@@ -64,3 +64,14 @@ This generated scenario takes place in rougher weather and also features the hig
 ![Modified lane changing scenario in a different town](report/figures/generated/lanechange_2.jpg)
 
 Above we can see a generated lane changing scenario taking place in a different town from the original scenario.
+
+
+## Data generation
+
+To collect data for some generated scenarios, you have to replace the *manual_control.py*-file of the Scenario-Runner with the one provided in the data_generation folder. Then (with CARLA running) you just need to execute the *run.cmd*-file (currently only for Windows).
+This will:
+- generate the specified amount of scenarios per base scenario (currently defined with 5 in the *run.cmd*)
+- for each generated scenario, run it via the Scenario-Runner
+- and start the *manual_control.py* in autopilot mode to gather the data with the expert driving
+
+You can find the collected data in form of image-files and measurements.json (expert control input) inside the *_out* folder in the Scenario-Runner.
