@@ -18,6 +18,7 @@ import math
 import tqdm
 import sys
 import copy
+import csv
 
 # complex types
 schema_complex_types_values = [
@@ -65,7 +66,7 @@ TOWN_TAG = 'LogicFile' # for finding out which town is used
 
 class ScenarioGenerator:
 
-    def __init__(self, save_dir:str, schema_file_path:str, path_to_basic_scenarios:str, number_scenarios:int):
+    def __init__(self, save_dir:str, schema_file_path:str, path_to_basic_scenarios:str, number_scenarios:int, log:bool):
         self.save_dir = save_dir
         self.number_scenarios = int(number_scenarios)
         self.schema_file_path = schema_file_path
@@ -73,6 +74,8 @@ class ScenarioGenerator:
         self.manipulator = None
         self.values = _nested_dict()
         self.manipulator = ConfigManipulator()
+        self.log = log
+        self.log_dict = {}
 
     def run(self) -> None:
 
@@ -127,6 +130,17 @@ class ScenarioGenerator:
                 os.makedirs(self.save_dir)
             with open(os.path.join(self.save_dir,f"{file_name}.xosc"),"w") as f:
                 f.write(data)
+    
+    def _saveLogCSV(self,basic_scenario_name:str) -> None:
+        folder = f"./logs/{basic_scenario_name}/"
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+        for key in self.log_dict:
+            with open(f'{folder}/log_{basic_scenario_name}_{key}.csv', 'w') as csv_file:  
+                w = csv.DictWriter(csv_file, [key])
+                w.writeheader()
+                for item in self.log_dict[key]:
+                        w.writerow({key:item})
 
     def readOpenScenarioSchema(self) -> xmlschema.validators.schema.XMLSchema10:
         return xmlschema.XMLSchema(self.schema_file_path)
@@ -146,22 +160,22 @@ class ScenarioGenerator:
         else:
                 return False
 
-    def _getStringHashOfFile(self, scenario_tree:ElementTree):
+    def _getStringHashOfFile(self, scenario_tree:ElementTree) -> int:
         '''
          Helper function for getting a hash value of string based content. 
          Assumption: There is no disordering of attributes during the generation process
         '''
         xml_hash_string = ElementTree.tostring(scenario_tree.getroot(),'utf-8')
-        return b''.join(xml_hash_string.split()).__hash__
+        return hash(b''.join(xml_hash_string.split()))
 
-    def _generateRandomRGB(self):
+    def _generateRandomRGB(self) -> list:
         return [str(random.randint(0,255)) for i in range(3)]
 
     def random_date(self,start) -> datetime.datetime:
         ''' Helper function for generating a new date in range 00:00 AM and 23:59 PM '''
         return start + datetime.timedelta(minutes=random.randrange(1440))
 
-    def generateXmlScenariosFromBasic(self, openScenarioFilename: str):
+    def generateXmlScenariosFromBasic(self, openScenarioFilename: str) -> None:
         ''' Generate Scenario by using basic scenario as template '''
 
         basic_scenario = ET.parse(self.path_to_basic_scenarios + openScenarioFilename)
@@ -190,9 +204,6 @@ class ScenarioGenerator:
             self.manipulator.cyclist_analysis(openScenarioFilename, self.get_pos_for_role(root_original, 'hero'), self.get_pos_for_role(root_original, 'adversary'))
 
         for i in tqdm.tqdm(range(self.number_scenarios), desc=f"Generating new Scenarios for base scenario {openScenarioFilename}", file=sys.stdout):
-
-            #TODO: load selected town for new scenario
-            #print(scenario_towns[i])
 
             # HACK: only switch town in supported scenarios
             if openScenarioFilename == 'LaneChangeSimple.xosc' or openScenarioFilename == 'CyclistCrossing.xosc':
@@ -237,6 +248,14 @@ class ScenarioGenerator:
                             else:
                                 continue
                             node.set(item[0], str(new_value))
+
+                            #log if logging is enabled
+                            if self.log:
+                                try:
+                                    self.log_dict[item[0]].append(new_value)
+                                except KeyError:
+                                    self.log_dict[item[0]] = [new_value]
+
                 else:
                       continue
 
@@ -293,6 +312,10 @@ class ScenarioGenerator:
                 self.generated_scenarios_hashs.append(self._getStringHashOfFile(new_scenario))
                 self.saveFile(prettyfied_scenario, f"{os.path.splitext(openScenarioFilename)[0]}_{i}")
 
+        if self.log:
+            self._saveLogCSV(openScenarioFilename)
+            self.log_dict = {}
+
     def get_pos_for_role(self, scenario_root, role:str) -> tuple:
         ''' Helper function for finding spawn positions for included actors '''
         actor = [a for a in scenario_root.find('Storyboard').find('Init').find('Actions').findall('Private') if a.get('entityRef') == role][0]
@@ -307,6 +330,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="")
     parser.add_argument('--number_scenarios', required=False, default=1, help="Number of Scenarios that should be created")
     parser.add_argument('--save_path',required=False, default="./generated_scenarios/", help="Path for saving XML scenario files")
+    parser.add_argument('--log',required=False,action="store_true",help="Save new values in a csv log file" )
     args = parser.parse_args()
 
     save_dir = args.save_path
@@ -320,7 +344,8 @@ if __name__ == "__main__":
         save_dir=save_dir,
         number_scenarios=number_scenarios,
         schema_file_path=XML_SCHEMA_FILE_PATH,
-        path_to_basic_scenarios=PATH_TO_BASIC_SCENARIOS
+        path_to_basic_scenarios=PATH_TO_BASIC_SCENARIOS,
+        log=args.log
         )
 
     # run generator

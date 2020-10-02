@@ -11,6 +11,21 @@ Karl Thyssen
 
 ## Scenario generation
 
+For starting the scenario generation, make sure to install all requirements using the *environment.yml* i.e. with conda:
+
+```conda env create -f environment.yml``
+
+Afterwards, make sure to place all basic scenarios in the *./scenario_generation/basic_scenarios/* folder as *xosc* OpenSCENARIO configuration files.
+
+Start the process by executing the following command from the root folder:
+
+``python ./scenario_generation/openSCENARIO_generator.py [--log] [--number_scenarios] [--save_path]
+
+Explanation of the arguments:
+* ``logs`` : Flag, if logging is activated. The generator will save a csv file in *./logs/* per basic scenario including all new values set for newly generated scenarios
+* ``number_scenarios`` : The number of scenarios which should be created out of one basic scenario (*default* is 1)
+* ``save_path`` : Folder where to save the generated scenarios (*default* is *./generated_scenarios/*)
+
 Below are some examples of newly generated scenarios compared to the original scenario.
 
 ### Cyclist scenario
