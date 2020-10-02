@@ -26,7 +26,7 @@ Explanation of the arguments:
 * ``number_scenarios`` : The number of scenarios which should be created out of one basic scenario (*default* is 1)
 * ``save_path`` : Folder where to save the generated scenarios (*default* is *./generated_scenarios/*)
 
-**Note** : To start the Scenario-Generator, make sure you have a running CARLA instance. The scripts will use its the Python-API.
+**Note** : To start the Scenario-Generator, make sure you have a running CARLA instance. The scripts will use the Python-API of the CARLA Server.
 
 Below are some examples of newly generated scenarios compared to the original scenario.
 
