@@ -13,13 +13,13 @@ Karl Thyssen
 
 For starting the scenario generation, make sure to install all requirements using the *environment.yml* i.e. with conda:
 
-```conda env create -f environment.yml``
+`` conda env create -f environment.yml ``
 
 Afterwards, make sure to place all basic scenarios in the *./scenario_generation/basic_scenarios/* folder as *xosc* OpenSCENARIO configuration files.
 
 Start the process by executing the following command from the root folder:
 
-``python ./scenario_generation/openSCENARIO_generator.py [--log] [--number_scenarios] [--save_path]
+``python ./scenario_generation/openSCENARIO_generator.py [--log] [--number_scenarios] [--save_path]``
 
 Explanation of the arguments:
 * ``logs`` : Flag, if logging is activated. The generator will save a csv file in *./logs/* per basic scenario including all new values set for newly generated scenarios
